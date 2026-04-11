@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { db } from "../../firebase";
+import { db, isOfflineMode } from "../../firebase";
 import { 
   collection, 
   addDoc, 
@@ -20,6 +20,19 @@ function AdminMenu() {
 
   // 🔥 Real-time listener for menu items
   useEffect(() => {
+    if (isOfflineMode) {
+      // OFFLINE DEMO BYPASS
+      setTimeout(() => {
+        setMenuItems([
+          { id: "1", name: "Artisan Pizza", price: 250, emoji: "🍕", available: true },
+          { id: "2", name: "Specialty Coffee", price: 120, emoji: "☕", available: true },
+          { id: "3", name: "Morning Croissant", price: 90, emoji: "🥐", available: true },
+          { id: "4", name: "Fresh Salad", price: 180, emoji: "🥗", available: false }
+        ]);
+      }, 500);
+      return;
+    }
+
     const q = query(collection(db, "menu"), orderBy("name"));
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const items = [];
@@ -38,6 +51,22 @@ function AdminMenu() {
     
     if (!newItem.name.trim() || !newItem.price) {
       alert("Please provide both item name and price.");
+      return;
+    }
+
+    if (isOfflineMode) {
+      // OFFLINE DEMO BYPASS
+      setLoading(true);
+      setTimeout(() => {
+        setMenuItems([...menuItems, {
+          id: `demo-item-${Date.now()}`,
+          name: newItem.name.trim(),
+          price: Number(newItem.price),
+          available: true
+        }]);
+        setNewItem({ name: "", price: "" });
+        setLoading(false);
+      }, 500);
       return;
     }
 
@@ -60,6 +89,11 @@ function AdminMenu() {
 
   // 🔄 Toggle Availability
   const toggleAvailability = async (id, currentStatus) => {
+    if (isOfflineMode) {
+      // OFFLINE DEMO BYPASS
+      setMenuItems(menuItems.map(item => item.id === id ? { ...item, available: !currentStatus } : item));
+      return;
+    }
     try {
       const itemRef = doc(db, "menu", id);
       await updateDoc(itemRef, {
@@ -75,6 +109,12 @@ function AdminMenu() {
   const deleteItem = async (id) => {
     if (!window.confirm("Are you sure you want to delete this item?")) return;
     
+    if (isOfflineMode) {
+       // OFFLINE DEMO BYPASS
+       setMenuItems(menuItems.filter(item => item.id !== id));
+       return;
+    }
+
     try {
       await deleteDoc(doc(db, "menu", id));
     } catch (err) {

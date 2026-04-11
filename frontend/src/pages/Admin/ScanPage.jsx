@@ -1,7 +1,7 @@
 import { useEffect, useState, useRef } from "react";
 import { Html5Qrcode } from "html5-qrcode";
 import { useNavigate } from "react-router-dom";
-import { db } from "../../firebase";
+import { db, isOfflineMode } from "../../firebase";
 import { collection, query, where, getDocs, updateDoc, doc } from "firebase/firestore";
 
 const VERIFY_API = import.meta.env.VITE_VERIFY_QR_API;
@@ -40,6 +40,11 @@ function ScanPage() {
               
               // 🔄 Update order in Firestore Database
               try {
+                if (isOfflineMode) {
+                   // OFFLINE DEMO BYPASS: just pretend it worked
+                   console.log("Offline bypass: Order scanned and updated");
+                   return;
+                }
                 const q = query(collection(db, "orders"), where("qrToken", "==", decodedText));
                 const snapshot = await getDocs(q);
                 

@@ -1,19 +1,33 @@
 import { useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
-import { db } from "../../firebase";
+import { db, isOfflineMode } from "../../firebase";
 import {
   collection,
   query,
   where,
   onSnapshot
 } from "firebase/firestore";
+import { motion } from "framer-motion";
+import { Settings, ScanLine, Clock, Package } from "lucide-react";
 
 function AdminDashboard() {
   const navigate = useNavigate();
   const [orders, setOrders] = useState([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // 🔥 Real-time listener for pending orders
+    if (isOfflineMode) {
+      // OFFLINE DEMO BYPASS
+      setTimeout(() => {
+        setOrders([
+          { id: "demo-ord-101", totalAmount: 370, items: [{name: "Artisan Pizza", emoji: "🍕"}, {name: "Specialty Coffee", emoji: "☕"}] },
+          { id: "demo-ord-102", totalAmount: 180, items: [{name: "Fresh Salad", emoji: "🥗"}] }
+        ]);
+        setLoading(false);
+      }, 800);
+      return;
+    }
+
     const q = query(
       collection(db, "orders"),
       where("paymentStatus", "==", "success"),
@@ -26,74 +40,92 @@ function AdminDashboard() {
         list.push({ id: doc.id, ...doc.data() });
       });
       setOrders(list);
+      setLoading(false);
     });
 
     return () => unsubscribe();
   }, []);
 
   return (
-    <div>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "30px", flexWrap: "wrap", gap: "15px" }}>
+    <motion.div 
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0 }}
+      style={{ display: "flex", flexDirection: "column", gap: "40px" }}
+    >
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "20px" }}>
         <div>
-          <h2 style={{ margin: 0, textAlign: "left" }}>Incoming Orders</h2>
-          <p style={{ color: "var(--text-muted)", margin: "5px 0 0 0", textAlign: "left" }}>Manage orders securely</p>
+          <h2 style={{ margin: 0, display: "flex", alignItems: "center", gap: "10px", fontSize: "2.5rem" }}>
+            Kitchen Hub <Package color="var(--theme-accent)" />
+          </h2>
+          <p style={{ opacity: 0.6, fontSize: "1.2rem", marginTop: "10px" }}>Manage live orders and fulfillment</p>
         </div>
         
-        {/* 🔘 Dashboard Controls */}
-        <div style={{ display: "flex", gap: "10px" }}>
-          <button
-            className="btn btn-secondary"
-            onClick={() => navigate("/admin/menu")}
-            style={{ padding: "14px 28px", fontSize: "1.1rem" }}
-          >
-            🍽️ Manage Menu
+        <div style={{ display: "flex", gap: "15px" }}>
+          <button className="btn-secondary" onClick={() => navigate("/admin/menu")}>
+            <Settings size={18} /> Manage Menu
           </button>
           
-          <button
-            className="btn"
-            onClick={() => navigate("/admin/scan")}
-            style={{ padding: "14px 28px", fontSize: "1.1rem" }}
-          >
-            📷 Scan Student QR
+          <button className="btn-primary" onClick={() => navigate("/admin/scan")} style={{ padding: "14px 28px" }}>
+            <ScanLine size={18} /> Scan Token
           </button>
         </div>
       </div>
 
-      <div style={{ background: "rgba(255,255,255,0.4)", padding: "20px", borderRadius: "16px", marginBottom: "20px", display: "inline-block" }}>
-        <h3 style={{ margin: 0 }}>📦 Pending Orders to fulfill: <span style={{ color: "var(--primary)", fontSize: "1.6rem" }}>{orders.length}</span></h3>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: "30px" }}>
+        <div className="glass-panel" style={{ display: "flex", alignItems: "center", gap: "20px" }}>
+            <div style={{ background: "rgba(255,107,107,0.1)", padding: "20px", borderRadius: "20px" }}>
+              <Clock size={40} color="var(--theme-accent)" />
+            </div>
+            <div>
+              <p style={{ opacity: 0.6, margin: 0, fontSize: "1.1rem" }}>Pending Fulfillment</p>
+              <h3 style={{ margin: 0, fontSize: "3rem", fontWeight: 800 }}>{orders.length}</h3>
+            </div>
+        </div>
       </div>
 
-      {/* 📋 Orders List */}
-      <div className="orders-list">
-        {orders.length === 0 ? (
-          <div className="empty-state">
-             <p>No pending orders at the moment. You're all caught up! ✨</p>
-          </div>
-        ) : (
-          orders.map((order) => (
-            <div className="order-card" key={order.id}>
-              <div style={{ display: "flex", justifyContent: "space-between", borderBottom: "1px solid rgba(0,0,0,0.05)", paddingBottom: "10px", marginBottom: "15px" }}>
-                <span style={{ fontFamily: "monospace", color: "var(--text-muted)" }}>#{order.id.substring(0, 8).toUpperCase()}</span>
-                <span style={{ fontWeight: "700", color: "var(--primary)", fontSize: "1.2rem" }}>₹{order.totalAmount}</span>
-              </div>
-              
-              <ul style={{ listStyleType: "none", padding: 0, margin: 0 }}>
-                {order.items?.map((item, index) => (
-                  <li key={index} style={{ padding: "5px 0", display: "flex", justifyContent: "space-between" }}>
-                    <span>{item.emoji || "🔸"} {item.name}</span>
-                    <span style={{ color: "var(--text-muted)" }}>₹{item.price}</span>
-                  </li>
-                ))}
-              </ul>
-              
-              <div style={{ marginTop: "15px", paddingTop: "15px", borderTop: "1px dashed rgba(0,0,0,0.1)", textAlign: "right" }}>
-                <span style={{ background: "#e2e8f0", padding: "5px 12px", borderRadius: "20px", fontSize: "0.85rem", fontWeight: "600" }}>Paid, waiting for scan</span>
-              </div>
+      <div>
+        <h3 style={{ fontSize: "1.8rem", marginBottom: "20px" }}>Active Queue</h3>
+        <div style={{ display: "flex", flexDirection: "column", gap: "15px" }}>
+          {loading ? (
+            <div className="glass-panel" style={{ textAlign: "center" }}><div className="loader"></div></div>
+          ) : orders.length === 0 ? (
+            <div className="glass-panel" style={{ textAlign: "center", padding: "60px 20px" }}>
+               <p style={{ opacity: 0.6, fontSize: "1.2rem" }}>Queue is empty. Kitchen is resting ✨</p>
             </div>
-          ))
-        )}
+          ) : (
+            orders.map((order, i) => (
+              <motion.div 
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: i * 0.05 }}
+                className="glass-panel" 
+                key={order.id}
+                style={{ padding: "25px", borderLeft: "4px solid var(--theme-accent)" }}
+              >
+                <div style={{ display: "flex", justifyContent: "space-between", borderBottom: "1px solid var(--theme-border)", paddingBottom: "15px", marginBottom: "15px" }}>
+                  <span style={{ fontFamily: "monospace", opacity: 0.6 }}>#{order.id.substring(0, 8).toUpperCase()}</span>
+                  <span style={{ fontWeight: "800", color: "var(--theme-accent)", fontSize: "1.3rem" }}>₹{order.totalAmount}</span>
+                </div>
+                
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px" }}>
+                  {order.items?.map((item, index) => (
+                    <div key={index} style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                      <span>{item.emoji || "🔸"}</span>
+                      <span style={{ fontWeight: 500 }}>{item.name}</span>
+                    </div>
+                  ))}
+                </div>
+                
+                <div style={{ marginTop: "20px", display: "flex", justifyContent: "flex-end" }}>
+                  <span className="glass-pill" style={{ opacity: 0.8, fontSize: "0.9rem" }}>Awaiting QR Scan</span>
+                </div>
+              </motion.div>
+            ))
+          )}
+        </div>
       </div>
-    </div>
+    </motion.div>
   );
 }
 

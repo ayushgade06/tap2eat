@@ -28,8 +28,6 @@ function Register() {
 
   return (
     <>
-      <h2 style={{ textAlign: "center", marginBottom: "25px" }}>Create Account</h2>
-
       <div className="input-group">
         <label className="input-label">Email Address</label>
         <input 
@@ -59,7 +57,7 @@ function Register() {
         </select>
       </div>
 
-      <button className="btn" style={{ width: "100%", marginTop: "10px" }} onClick={handleRegister} disabled={loading}>
+      <button className="btn-primary" style={{ width: "100%", marginTop: "10px" }} onClick={handleRegister} disabled={loading}>
         {loading ? <span className="loader" style={{ width: '20px', height: '20px', borderWidth: '2px' }}></span> : "Create Account"}
       </button>
     </>
