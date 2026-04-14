@@ -4,7 +4,7 @@ import { initializeApp, getApps } from "firebase/app";
 const missingEnv = !import.meta.env.VITE_FIREBASE_API_KEY;
 if (missingEnv) {
   console.warn(
-    "⚠️  Firebase env vars are missing. Create a .env file from .env.example and restart the dev server."
+    "Firebase env vars are missing. Create a .env file from .env.example and restart the dev server."
   );
 }
 

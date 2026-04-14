@@ -24,10 +24,10 @@ function AdminMenu() {
       // OFFLINE DEMO BYPASS
       setTimeout(() => {
         setMenuItems([
-          { id: "1", name: "Artisan Pizza", price: 250, emoji: "🍕", available: true },
-          { id: "2", name: "Specialty Coffee", price: 120, emoji: "☕", available: true },
-          { id: "3", name: "Morning Croissant", price: 90, emoji: "🥐", available: true },
-          { id: "4", name: "Fresh Salad", price: 180, emoji: "🥗", available: false }
+          { id: "1", name: "Artisan Pizza", price: 250, available: true },
+          { id: "2", name: "Specialty Coffee", price: 120, available: true },
+          { id: "3", name: "Morning Croissant", price: 90, available: true },
+          { id: "4", name: "Fresh Salad", price: 180, available: false }
         ]);
       }, 500);
       return;
@@ -127,7 +127,7 @@ function AdminMenu() {
     <div className="admin-menu">
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "30px" }}>
         <div>
-          <h2 style={{ margin: 0 }}>Menu Management 🍽️</h2>
+          <h2 style={{ margin: 0 }}>Menu Management</h2>
           <p style={{ color: "var(--text-muted)", margin: "5px 0 0 0" }}>Control what students can see and order</p>
         </div>
         <button className="btn btn-outline" onClick={() => navigate("/")}>
@@ -183,7 +183,7 @@ function AdminMenu() {
       
       {menuItems.length === 0 ? (
         <div className="empty-state" style={{ padding: "60px" }}>
-          <p style={{ fontSize: "1.2rem" }}>No items in the menu yet. Start by adding one above! 🍕</p>
+          <p style={{ fontSize: "1.2rem" }}>No items in the menu yet. Start by adding one above!</p>
         </div>
       ) : (
         <div className="menu-grid" style={{ 

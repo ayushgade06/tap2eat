@@ -20,8 +20,8 @@ function AdminDashboard() {
       // OFFLINE DEMO BYPASS
       setTimeout(() => {
         setOrders([
-          { id: "demo-ord-101", totalAmount: 370, items: [{name: "Artisan Pizza", emoji: "🍕"}, {name: "Specialty Coffee", emoji: "☕"}] },
-          { id: "demo-ord-102", totalAmount: 180, items: [{name: "Fresh Salad", emoji: "🥗"}] }
+          { id: "demo-ord-101", totalAmount: 370, items: [{name: "Artisan Pizza"}, {name: "Specialty Coffee"}] },
+          { id: "demo-ord-102", totalAmount: 180, items: [{name: "Fresh Salad"}] }
         ]);
         setLoading(false);
       }, 800);
@@ -91,7 +91,7 @@ function AdminDashboard() {
             <div className="glass-panel" style={{ textAlign: "center" }}><div className="loader"></div></div>
           ) : orders.length === 0 ? (
             <div className="glass-panel" style={{ textAlign: "center", padding: "60px 20px" }}>
-               <p style={{ opacity: 0.6, fontSize: "1.2rem" }}>Queue is empty. Kitchen is resting ✨</p>
+               <p style={{ opacity: 0.6, fontSize: "1.2rem" }}>Queue is empty. Kitchen is resting.</p>
             </div>
           ) : (
             orders.map((order, i) => (
@@ -111,7 +111,7 @@ function AdminDashboard() {
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px" }}>
                   {order.items?.map((item, index) => (
                     <div key={index} style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-                      <span>{item.emoji || "🔸"}</span>
+                      <div style={{ width: "6px", height: "6px", borderRadius: "50%", background: "var(--theme-accent)" }}></div>
                       <span style={{ fontWeight: 500 }}>{item.name}</span>
                     </div>
                   ))}

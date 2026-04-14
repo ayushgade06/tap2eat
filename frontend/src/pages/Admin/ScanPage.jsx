@@ -2,7 +2,7 @@ import { useEffect, useState, useRef } from "react";
 import { Html5Qrcode } from "html5-qrcode";
 import { useNavigate } from "react-router-dom";
 import { db, isOfflineMode } from "../../firebase";
-import { collection, query, where, getDocs, updateDoc, doc } from "firebase/firestore";
+import { collection, query, where, getDocs, deleteDoc, doc, addDoc } from "firebase/firestore";
 
 const VERIFY_API = import.meta.env.VITE_VERIFY_QR_API;
 
@@ -40,19 +40,22 @@ function ScanPage() {
               
               // 🔄 Update order in Firestore Database
               try {
-                if (isOfflineMode) {
-                   // OFFLINE DEMO BYPASS: just pretend it worked
-                   console.log("Offline bypass: Order scanned and updated");
-                   return;
-                }
+                if (isOfflineMode) return;
+                
                 const q = query(collection(db, "orders"), where("qrToken", "==", decodedText));
                 const snapshot = await getDocs(q);
-                
-                // Automatically mark the scanned order(s) as completed
-                const updatePromises = snapshot.docs.map((docSnap) => 
-                  updateDoc(doc(db, "orders", docSnap.id), { orderStatus: "completed" })
-                );
-                await Promise.all(updatePromises);
+
+                // Archive to history for future analytics, then delete from active queue
+                const archivingPromises = snapshot.docs.map(async (docSnap) => {
+                  const data = docSnap.data();
+                  await addDoc(collection(db, "history"), {
+                    ...data,
+                    completedAt: Date.now(),
+                    orderStatus: "completed"
+                  });
+                  return deleteDoc(doc(db, "orders", docSnap.id));
+                });
+                await Promise.all(archivingPromises);
               } catch (delErr) {
                 console.error("Failed to update order in firestore:", delErr);
               }
@@ -86,7 +89,7 @@ function ScanPage() {
   return (
     <div style={{ textAlign: "center" }}>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "20px" }}>
-        <h2 style={{ margin: 0 }}>QR Scanner 📷</h2>
+        <h2 style={{ margin: 0 }}>QR Scanner</h2>
         <button className="btn btn-outline" onClick={() => navigate("/")} style={{ padding: "8px 15px", fontSize: "0.9rem" }}>
           Cancel
         </button>
@@ -113,7 +116,7 @@ function ScanPage() {
       {result && (
         <div className="order-card" style={{ marginTop: "20px", borderLeftColor: result.success ? "#40c057" : "#fa5252", textAlign: "center" }}>
           <h3 style={{ color: result.success ? "#40c057" : "#fa5252", fontSize: "1.5rem" }}>
-            {result.success ? "✅ Order Verified!" : "❌ Invalid QR"}
+            {result.success ? "Order Verified!" : "Invalid QR"}
           </h3>
           <p style={{ fontSize: "1.1rem", margin: "15px 0" }}>
             {result.data?.message || "Successfully processed"}

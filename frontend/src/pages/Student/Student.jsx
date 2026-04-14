@@ -24,16 +24,16 @@ export default function Student() {
   const [loading, setLoading] = useState(false);
   const [fetchingMenu, setFetchingMenu] = useState(true);
 
-  // Real-time listener for AVAILABLE menu items
+  // Real-time listener for menu items
   useEffect(() => {
     if (isOfflineMode) {
       // OFFLINE DEMO BYPASS
       setTimeout(() => {
         setMenu([
-          { id: "1", name: "Artisan Pizza", price: 250, emoji: "🍕", available: true },
-          { id: "2", name: "Specialty Coffee", price: 120, emoji: "☕", available: true },
-          { id: "3", name: "Morning Croissant", price: 90, emoji: "🥐", available: true },
-          { id: "4", name: "Fresh Salad", price: 180, emoji: "🥗", available: true }
+          { id: "1", name: "Artisan Pizza", price: 250, available: true },
+          { id: "2", name: "Specialty Coffee", price: 120, available: true },
+          { id: "3", name: "Morning Croissant", price: 90, available: true },
+          { id: "4", name: "Fresh Salad", price: 180, available: true }
         ]);
         setFetchingMenu(false);
       }, 800);
@@ -66,10 +66,11 @@ export default function Student() {
   useEffect(() => {
     if (!activeOrderId || isOfflineMode) return;
     const unsubscribe = onSnapshot(doc(db, "orders", activeOrderId), (docSnap) => {
-      if (docSnap.exists() && docSnap.data().orderStatus === "completed" && qrToken) {
+      // If document is deleted (Admin scanned it), it means order is successful
+      if (!docSnap.exists() && qrToken) {
         setQrToken("");
         setActiveOrderId(null);
-        alert("Your order has been scanned and fulfilled by the admin! Enjoy your meal 🍔");
+        alert("Your order has been scanned and fulfilled by the admin! Enjoy your meal");
       }
     });
     return () => unsubscribe();
@@ -194,11 +195,11 @@ export default function Student() {
   return (
     <div style={{ display: "flex", gap: "40px", alignItems: "flex-start", flexWrap: "wrap" }}>
       
-      {/* 🟢 MENU GRID AREA */}
+      {/* MENU GRID AREA */}
       <div style={{ flex: "1 1 600px", display: "flex", flexDirection: "column", gap: "30px" }}>
         <div>
           <h2 style={{ fontSize: "2.5rem", display: "flex", alignItems: "center", gap: "10px" }}>
-            Today's Menu <Sparkles color="var(--theme-accent)" />
+            Today's Menu
           </h2>
           <p style={{ opacity: 0.6, fontSize: "1.1rem" }}>Curated selections freshly prepared.</p>
         </div>
@@ -221,7 +222,7 @@ export default function Student() {
                 transition={{ type: "spring", stiffness: 400, damping: 25 }}
                 style={{ padding: "24px", position: "relative", overflow: "hidden", display: "flex", flexDirection: "column" }}
               >
-                <div style={{ fontSize: "3rem", marginBottom: "16px" }}>{item.emoji || "🍲"}</div>
+                <div style={{ width: "40px", height: "4px", background: "var(--theme-accent)", borderRadius: "2px", marginBottom: "16px" }}></div>
                 <h3 style={{ fontSize: "1.3rem", margin: "0 0 8px 0" }}>{item.name}</h3>
                 <div style={{ fontSize: "1.5rem", fontWeight: 800, color: "var(--theme-accent)", marginBottom: "20px" }}>
                   ₹{item.price}
@@ -239,7 +240,7 @@ export default function Student() {
         )}
       </div>
 
-      {/* 🟡 PREMIUM CART SIDEBAR */}
+      {/* PREMIUM CART SIDEBAR */}
       <div style={{ flex: "1 1 350px", position: "sticky", top: "100px" }}>
         <div className="glass-panel" style={{ padding: "30px", borderTop: "4px solid var(--theme-accent)" }}>
           <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "30px" }}>
@@ -267,7 +268,7 @@ export default function Student() {
                   style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "16px 0", borderBottom: "1px solid var(--theme-border)" }}
                 >
                   <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-                    <span>{item.emoji}</span>
+                    <div style={{ width: "6px", height: "6px", borderRadius: "50%", background: "var(--theme-accent)" }}></div>
                     <span style={{ fontWeight: 600 }}>{item.name}</span>
                   </div>
                   <div style={{ display: "flex", alignItems: "center", gap: "15px" }}>

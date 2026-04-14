@@ -106,7 +106,7 @@ function App() {
         zIndex: 100,
         paddingTop: "20px"
       }}>
-        <h1 style={{ margin: 0, fontSize: "clamp(1.5rem, 4vw, 2rem)", fontFamily: "var(--font-display)" }}>Tap2Eat <span style={{color:"var(--theme-accent)"}}>🍔</span></h1>
+        <h1 style={{ margin: 0, fontSize: "clamp(1.5rem, 4vw, 2rem)", fontFamily: "var(--font-display)" }}>Tap2Eat</h1>
         
         <div style={{ display: "flex", alignItems: "center", gap: "20px" }}>
           {role && (
