@@ -2,7 +2,9 @@ import { useEffect, useState, useRef } from "react";
 import { Html5Qrcode } from "html5-qrcode";
 import { useNavigate } from "react-router-dom";
 import { db, isOfflineMode } from "../../firebase";
-import { collection, query, where, getDocs, deleteDoc, doc, addDoc } from "firebase/firestore";
+import { collection, query, where, getDocs, updateDoc, doc } from "firebase/firestore";
+import { motion } from "framer-motion";
+import { ScanLine, CheckCircle2, XCircle, ArrowLeft } from "lucide-react";
 
 const VERIFY_API = import.meta.env.VITE_VERIFY_QR_API;
 
@@ -23,8 +25,8 @@ function ScanPage() {
         async (decodedText) => {
           try {
             setLoading(true);
-            scanner.pause(); // Pause scanner
-            
+            scanner.pause();
+
             const res = await fetch(VERIFY_API, {
               method: "POST",
               headers: { "Content-Type": "application/json" },
@@ -34,44 +36,29 @@ function ScanPage() {
             const data = await res.json();
             setResult({ success: res.ok, data });
 
-            // Stop after successful scan
             if (res.ok) {
               await scanner.stop();
-              
-              // 🔄 Update order in Firestore Database
               try {
-                if (isOfflineMode) return;
-                
+                if (isOfflineMode) {
+                  console.log("Offline bypass: Order scanned and updated");
+                  return;
+                }
                 const q = query(collection(db, "orders"), where("qrToken", "==", decodedText));
                 const snapshot = await getDocs(q);
-
-                // Archive to history for future analytics, then delete from active queue
-                const archivingPromises = snapshot.docs.map(async (docSnap) => {
-                  const data = docSnap.data();
-                  await addDoc(collection(db, "history"), {
-                    ...data,
-                    completedAt: Date.now(),
-                    orderStatus: "completed"
-                  });
-                  return deleteDoc(doc(db, "orders", docSnap.id));
-                });
-                await Promise.all(archivingPromises);
+                const updatePromises = snapshot.docs.map((docSnap) =>
+                  updateDoc(doc(db, "orders", docSnap.id), { orderStatus: "completed" })
+                );
+                await Promise.all(updatePromises);
               } catch (delErr) {
                 console.error("Failed to update order in firestore:", delErr);
               }
-              
             } else {
-              if (scanner.resume) {
-                scanner.resume(); // Resume if invalid to try again
-              }
+              if (scanner.resume) scanner.resume();
             }
-
           } catch (err) {
             console.error(err);
             setResult({ success: false, data: { message: "Network error occurred." } });
-            if (scanner.resume) {
-               scanner.resume();
-            }
+            if (scanner.resume) scanner.resume();
           } finally {
             setLoading(false);
           }
@@ -87,49 +74,69 @@ function ScanPage() {
   }, []);
 
   return (
-    <div style={{ textAlign: "center" }}>
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "20px" }}>
-        <h2 style={{ margin: 0 }}>QR Scanner</h2>
-        <button className="btn btn-outline" onClick={() => navigate("/")} style={{ padding: "8px 15px", fontSize: "0.9rem" }}>
-          Cancel
-        </button>
+    <motion.div
+      initial={{ opacity: 0, y: 16 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.4 }}
+    >
+      <div className="admin-page-header">
+        <div>
+          <h2>
+            <ScanLine size={28} color="var(--accent)" />
+            QR Scanner
+          </h2>
+          <p>Scan student QR codes to fulfill their orders</p>
+        </div>
       </div>
 
-      <p style={{ color: "var(--text-muted)", marginBottom: "20px" }}>
-        Align the student's QR code within the frame to verify their order.
-      </p>
-
       {!result?.success && (
-        <div className="qr-container" style={{ padding: "10px", width: "100%", maxWidth: "350px", overflow: "hidden", margin: "0 auto 20px" }}>
-          <div
-            id="reader"
-            style={{ width: "100%", border: "none", borderRadius: "10px" }}
-          />
+        <div style={{ textAlign: "center" }}>
+          <div className="scanner-container" style={{ marginBottom: "var(--space-6)" }}>
+            <div id="reader" style={{ width: "100%", border: "none" }} />
+          </div>
+
           {loading && (
-            <div style={{ margin: "15px 0", color: "var(--secondary)", fontWeight: "600", display: "flex", gap: "10px", justifyContent: "center", alignItems: "center" }}>
-              <span className="loader" style={{ width: '20px', height: '20px', borderWidth: '2px', borderColor: "rgba(0,0,0,0.1)", borderTopColor: "var(--secondary)" }}></span> Processing Scan...
+            <div className="flex items-center gap-3" style={{ justifyContent: "center", color: "var(--accent)" }}>
+              <span className="loader" style={{ width: 20, height: 20, borderWidth: 2 }} />
+              <span style={{ fontWeight: 600 }}>Processing scan...</span>
             </div>
           )}
+
+          <p style={{ color: "var(--text-muted)", marginTop: "var(--space-4)", fontSize: "0.9rem" }}>
+            Align the student's QR code within the frame
+          </p>
         </div>
       )}
 
       {result && (
-        <div className="order-card" style={{ marginTop: "20px", borderLeftColor: result.success ? "#40c057" : "#fa5252", textAlign: "center" }}>
-          <h3 style={{ color: result.success ? "#40c057" : "#fa5252", fontSize: "1.5rem" }}>
-            {result.success ? "Order Verified!" : "Invalid QR"}
+        <motion.div
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className={`card scan-result ${result.success ? "scan-result-success" : "scan-result-error"}`}
+          style={{ padding: "var(--space-8)", textAlign: "center", maxWidth: 480, margin: "0 auto" }}
+        >
+          {result.success ? (
+            <CheckCircle2 size={56} color="var(--success)" style={{ margin: "0 auto var(--space-4)" }} />
+          ) : (
+            <XCircle size={56} color="var(--danger)" style={{ margin: "0 auto var(--space-4)" }} />
+          )}
+
+          <h3 style={{ fontSize: "1.5rem", marginBottom: "var(--space-3)", color: result.success ? "var(--success)" : "var(--danger)" }}>
+            {result.success ? "Order Verified!" : "Invalid QR Code"}
           </h3>
-          <p style={{ fontSize: "1.1rem", margin: "15px 0" }}>
+
+          <p style={{ fontSize: "1.05rem", marginBottom: "var(--space-6)" }}>
             {result.data?.message || "Successfully processed"}
           </p>
-          
+
           {result.success && (
-            <button className="btn btn-secondary" onClick={() => navigate("/")} style={{ marginTop: "15px" }}>
+            <button className="btn btn-primary" onClick={() => navigate("/")}>
               Back to Dashboard
             </button>
           )}
-        </div>
+        </motion.div>
       )}
-    </div>
+    </motion.div>
   );
 }
 

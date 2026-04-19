@@ -1,39 +1,44 @@
 import { useState, useEffect } from "react";
 import { QRCodeCanvas } from "qrcode.react";
 import { auth, db, isOfflineMode } from "../../firebase";
-import { 
-  doc, 
-  onSnapshot, 
-  collection, 
-  query, 
-  where 
+import {
+  doc,
+  onSnapshot,
+  collection,
+  query,
+  where
 } from "firebase/firestore";
 import { motion, AnimatePresence } from "framer-motion";
-import { ShoppingBag, ArrowRight, X, Sparkles, CheckCircle2 } from "lucide-react";
+import { ShoppingBag, ArrowRight, ArrowLeft, Sparkles, CheckCircle2, Plus, Minus, ReceiptText } from "lucide-react";
 
 const CREATE_API = import.meta.env.VITE_CREATE_API;
 const VERIFY_API = import.meta.env.VITE_VERIFY_API;
-const RAZORPAY_ORDER_API = import.meta.env.VITE_RAZORPAY_ORDER_API; 
+const RAZORPAY_ORDER_API = import.meta.env.VITE_RAZORPAY_ORDER_API;
 const RAZORPAY_KEY = import.meta.env.VITE_RAZORPAY_KEY;
 
 export default function Student() {
+  const SGST_RATE = 0.025;
+  const CGST_RATE = 0.025;
+  const PLATFORM_FEE_RATE = 0.01;
+
   const [cart, setCart] = useState([]);
   const [menu, setMenu] = useState([]);
   const [qrToken, setQrToken] = useState("");
   const [activeOrderId, setActiveOrderId] = useState(null);
   const [loading, setLoading] = useState(false);
   const [fetchingMenu, setFetchingMenu] = useState(true);
+  const [currentView, setCurrentView] = useState("menu");
 
-  // Real-time listener for menu items
   useEffect(() => {
     if (isOfflineMode) {
-      // OFFLINE DEMO BYPASS
       setTimeout(() => {
         setMenu([
-          { id: "1", name: "Artisan Pizza", price: 250, available: true },
-          { id: "2", name: "Specialty Coffee", price: 120, available: true },
-          { id: "3", name: "Morning Croissant", price: 90, available: true },
-          { id: "4", name: "Fresh Salad", price: 180, available: true }
+          { id: "1", name: "Artisan Pizza", price: 250, emoji: "🍕", available: true },
+          { id: "2", name: "Specialty Coffee", price: 120, emoji: "☕", available: true },
+          { id: "3", name: "Morning Croissant", price: 90, emoji: "🥐", available: true },
+          { id: "4", name: "Fresh Salad", price: 180, emoji: "🥗", available: true },
+          { id: "5", name: "Grilled Sandwich", price: 150, emoji: "🥪", available: true },
+          { id: "6", name: "Masala Chai", price: 40, emoji: "🍵", available: true }
         ]);
         setFetchingMenu(false);
       }, 800);
@@ -52,25 +57,49 @@ export default function Student() {
     return () => unsubscribe();
   }, []);
 
-  const addToCart = (item) => setCart([...cart, item]);
-  
-  const removeFromCart = (index) => {
-    const newCart = [...cart];
-    newCart.splice(index, 1);
-    setCart(newCart);
+  const getCartMap = () => {
+    const map = {};
+    cart.forEach((item) => {
+      if (map[item.id]) {
+        map[item.id].qty += 1;
+      } else {
+        map[item.id] = { ...item, qty: 1 };
+      }
+    });
+    return Object.values(map);
   };
 
-  const total = cart.reduce((sum, item) => sum + item.price, 0);
+  const addToCart = (item) => setCart([...cart, item]);
 
-  // Order Fulfillment Listener
+  const removeOneFromCart = (itemId) => {
+    const idx = cart.findIndex((c) => c.id === itemId);
+    if (idx !== -1) {
+      const newCart = [...cart];
+      newCart.splice(idx, 1);
+      setCart(newCart);
+    }
+  };
+
+  const subtotal = cart.reduce((sum, item) => sum + item.price, 0);
+  const sgst = Number((subtotal * SGST_RATE).toFixed(2));
+  const cgst = Number((subtotal * CGST_RATE).toFixed(2));
+  const platformFee = Number((subtotal * PLATFORM_FEE_RATE).toFixed(2));
+  const grandTotal = Number((subtotal + sgst + cgst + platformFee).toFixed(2));
+  const cartGrouped = getCartMap();
+  const cartQtyMap = cart.reduce((map, item) => {
+    map[item.id] = (map[item.id] || 0) + 1;
+    return map;
+  }, {});
+
+  const formatINR = (value) => `₹${value.toFixed(2)}`;
+
   useEffect(() => {
     if (!activeOrderId || isOfflineMode) return;
     const unsubscribe = onSnapshot(doc(db, "orders", activeOrderId), (docSnap) => {
-      // If document is deleted (Admin scanned it), it means order is successful
-      if (!docSnap.exists() && qrToken) {
+      if (docSnap.exists() && docSnap.data().orderStatus === "completed" && qrToken) {
         setQrToken("");
         setActiveOrderId(null);
-        alert("Your order has been scanned and fulfilled by the admin! Enjoy your meal");
+        alert("Your order has been scanned and fulfilled by the admin! Enjoy your meal.");
       }
     });
     return () => unsubscribe();
@@ -80,12 +109,12 @@ export default function Student() {
     if (cart.length === 0) return;
 
     if (isOfflineMode) {
-      // OFFLINE DEMO BYPASS
       setLoading(true);
       setTimeout(() => {
         setQrToken(`demo-qr-${Date.now()}`);
         setActiveOrderId(`demo-order-${Date.now()}`);
         setCart([]);
+        setCurrentView("menu");
         setLoading(false);
       }, 1500);
       return;
@@ -93,11 +122,10 @@ export default function Student() {
 
     try {
       setLoading(true);
-
       const orderRes = await fetch(CREATE_API, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ userId: auth.currentUser.uid, items: cart, totalAmount: total })
+        body: JSON.stringify({ userId: auth.currentUser.uid, items: cart, totalAmount: grandTotal })
       });
       const orderData = await orderRes.json();
       const orderId = orderData.orderId;
@@ -105,14 +133,14 @@ export default function Student() {
       const razorRes = await fetch(RAZORPAY_ORDER_API, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ amount: total })
+        body: JSON.stringify({ amount: grandTotal })
       });
       const razorOrder = await razorRes.json();
 
       if (!razorOrder.id) {
-          alert("Could not initialize payment gateway.");
-          setLoading(false);
-          return;
+        alert("Could not initialize payment gateway.");
+        setLoading(false);
+        return;
       }
 
       const options = {
@@ -123,31 +151,32 @@ export default function Student() {
         description: "Premium Campus Dining",
         order_id: razorOrder.id,
         handler: async function (response) {
-          setLoading(true); 
+          setLoading(true);
           try {
-              const verifyRes = await fetch(VERIFY_API, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ orderId, ...response })
-              });
-              const verifyData = await verifyRes.json();
-              if (verifyData.qrToken) {
-                setQrToken(verifyData.qrToken);
-                setActiveOrderId(orderId);
-                setCart([]); 
-              } else {
-                alert("Payment verification failed");
-              }
-          } catch(e) {
-              console.error(e);
+            const verifyRes = await fetch(VERIFY_API, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ orderId, ...response })
+            });
+            const verifyData = await verifyRes.json();
+            if (verifyData.qrToken) {
+              setQrToken(verifyData.qrToken);
+              setActiveOrderId(orderId);
+              setCart([]);
+              setCurrentView("menu");
+            } else {
               alert("Payment verification failed");
+            }
+          } catch (e) {
+            console.error(e);
+            alert("Payment verification failed");
           } finally {
-              setLoading(false);
+            setLoading(false);
           }
         },
-        modal: { ondismiss: function() { setLoading(false); } },
+        modal: { ondismiss: function () { setLoading(false); } },
         prefill: { email: auth.currentUser.email },
-        theme: { color: "#ff6b6b" }
+        theme: { color: "#FF6A3D" }
       };
 
       const rzp = new window.Razorpay(options);
@@ -161,152 +190,228 @@ export default function Student() {
 
   if (qrToken) {
     return (
-      <div style={{ minHeight: "60vh", display: "flex", justifyContent: "center", alignItems: "center" }}>
-        <motion.div 
-          initial={{ scale: 0.8, opacity: 0 }}
-          animate={{ scale: 1, opacity: 1 }}
-          transition={{ type: "spring", bounce: 0.5 }}
-          className="glass-panel" 
-          style={{ textAlign: "center", maxWidth: "400px", width: "100%" }}
-        >
+      <div className="app-content">
+        <div className="qr-view">
           <motion.div
-            initial={{ scale: 0 }}
-            animate={{ scale: 1 }}
-            transition={{ delay: 0.2, type: "spring" }}
-            style={{ marginBottom: "20px" }}
+            initial={{ scale: 0.85, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            transition={{ type: "spring", bounce: 0.4 }}
+            className="card qr-card"
           >
-            <CheckCircle2 size={64} color="var(--theme-accent)" style={{ margin: "0 auto", filter: "drop-shadow(0 0 10px rgba(255,107,107,0.5))" }} />
-          </motion.div>
-          <h2 style={{ fontSize: "2rem", marginBottom: "10px" }}>Order Ready</h2>
-          <p style={{ opacity: 0.7, marginBottom: "30px" }}>Present this code at the pickup counter.</p>
-          
-          <div style={{ background: "white", padding: "20px", borderRadius: "20px", display: "inline-block", boxShadow: "0 10px 30px rgba(0,0,0,0.1)", marginBottom: "30px" }}>
-            <QRCodeCanvas value={qrToken} size={220} />
-          </div>
+            <motion.div
+              initial={{ scale: 0 }}
+              animate={{ scale: 1 }}
+              transition={{ delay: 0.2, type: "spring" }}
+            >
+              <CheckCircle2 size={56} color="var(--accent-secondary)" style={{ margin: "0 auto var(--space-4)", display: "block" }} />
+            </motion.div>
+            <h2 style={{ fontSize: "1.75rem", marginBottom: "var(--space-2)" }}>Order Confirmed!</h2>
+            <p style={{ marginBottom: "var(--space-6)" }}>Present this code at the pickup counter.</p>
 
-          <button className="btn-secondary" style={{ width: "100%" }} onClick={() => setQrToken("")}>
-            Done / Start New Order
-          </button>
-        </motion.div>
+            <div className="qr-code-container">
+              <QRCodeCanvas value={qrToken} size={200} />
+            </div>
+
+            <button className="btn btn-secondary btn-block" onClick={() => setQrToken("")}>
+              Start New Order
+            </button>
+          </motion.div>
+        </div>
       </div>
     );
   }
 
-  return (
-    <div style={{ display: "flex", gap: "40px", alignItems: "flex-start", flexWrap: "wrap" }}>
-      
-      {/* MENU GRID AREA */}
-      <div style={{ flex: "1 1 600px", display: "flex", flexDirection: "column", gap: "30px" }}>
-        <div>
-          <h2 style={{ fontSize: "2.5rem", display: "flex", alignItems: "center", gap: "10px" }}>
-            Today's Menu
-          </h2>
-          <p style={{ opacity: 0.6, fontSize: "1.1rem" }}>Curated selections freshly prepared.</p>
-        </div>
-
-        {fetchingMenu ? (
-          <div style={{ padding: "100px 0", textAlign: "center" }}>
-            <div className="loader"></div>
-          </div>
-        ) : menu.length === 0 ? (
-          <div className="glass-panel" style={{ textAlign: "center", padding: "60px 20px" }}>
-            <p style={{ opacity: 0.6, fontSize: "1.2rem" }}>The menu is currently being updated. Please check back shortly.</p>
-          </div>
-        ) : (
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(240px, 1fr))", gap: "20px" }}>
-            {menu.map((item) => (
-              <motion.div 
-                key={item.id}
-                className="glass-panel"
-                whileHover={{ y: -5, boxShadow: "var(--theme-glow)" }}
-                transition={{ type: "spring", stiffness: 400, damping: 25 }}
-                style={{ padding: "24px", position: "relative", overflow: "hidden", display: "flex", flexDirection: "column" }}
-              >
-                <div style={{ width: "40px", height: "4px", background: "var(--theme-accent)", borderRadius: "2px", marginBottom: "16px" }}></div>
-                <h3 style={{ fontSize: "1.3rem", margin: "0 0 8px 0" }}>{item.name}</h3>
-                <div style={{ fontSize: "1.5rem", fontWeight: 800, color: "var(--theme-accent)", marginBottom: "20px" }}>
-                  ₹{item.price}
-                </div>
-                <button 
-                  onClick={() => addToCart(item)}
-                  className="btn-secondary" 
-                  style={{ marginTop: "auto", padding: "10px", width: "100%", fontSize: "0.95rem" }}
-                >
-                  Add to Cart
-                </button>
-              </motion.div>
-            ))}
-          </div>
+  const CartContent = () => (
+    <>
+      <div className="cart-header">
+        <ReceiptText size={24} color="var(--accent)" />
+        <h2>Current Order</h2>
+        {cart.length > 0 && (
+          <span className="badge badge-accent" style={{ marginLeft: "auto" }}>
+            {cart.length}
+          </span>
         )}
       </div>
 
-      {/* PREMIUM CART SIDEBAR */}
-      <div style={{ flex: "1 1 350px", position: "sticky", top: "100px" }}>
-        <div className="glass-panel" style={{ padding: "30px", borderTop: "4px solid var(--theme-accent)" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "30px" }}>
-            <ShoppingBag size={28} color="var(--theme-accent)" />
-            <h2 style={{ fontSize: "1.8rem", margin: 0 }}>Your Order</h2>
-          </div>
-
-          <div style={{ minHeight: "150px" }}>
-            <AnimatePresence>
-              {cart.length === 0 && (
-                <motion.div 
-                  initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-                  style={{ padding: "40px 0", textAlign: "center", opacity: 0.5 }}
-                >
-                  <p>Your tray is empty.</p>
-                </motion.div>
-              )}
-              {cart.map((item, index) => (
-                <motion.div
-                  key={`${item.id}-${index}`}
-                  initial={{ opacity: 0, x: 20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: -20 }}
-                  layout
-                  style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "16px 0", borderBottom: "1px solid var(--theme-border)" }}
-                >
-                  <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-                    <div style={{ width: "6px", height: "6px", borderRadius: "50%", background: "var(--theme-accent)" }}></div>
-                    <span style={{ fontWeight: 600 }}>{item.name}</span>
-                  </div>
-                  <div style={{ display: "flex", alignItems: "center", gap: "15px" }}>
-                    <span style={{ opacity: 0.8 }}>₹{item.price}</span>
-                    <button 
-                      onClick={() => removeFromCart(index)} 
-                      style={{ background: "none", border: "none", color: "var(--theme-text)", opacity: 0.5, cursor: "pointer", display: "flex" }}
-                    >
-                      <X size={18} />
-                    </button>
-                  </div>
-                </motion.div>
-              ))}
-            </AnimatePresence>
-          </div>
-
-          {cart.length > 0 && (
-            <motion.div layout style={{ marginTop: "30px" }}>
-              <div style={{ display: "flex", justifyContent: "space-between", fontSize: "1.4rem", fontWeight: 800, marginBottom: "20px" }}>
-                <span>Total</span>
-                <span>₹{total}</span>
-              </div>
-              
-              <button 
-                className="btn-primary" 
-                onClick={handleOrder} 
-                disabled={loading} 
-                style={{ width: "100%", padding: "18px" }}
-              >
-                {loading ? <div className="loader"></div> : (
-                  <>Checkout <ArrowRight size={20} /></>
-                )}
-              </button>
+      <div style={{ minHeight: 120 }}>
+        <AnimatePresence>
+          {cartGrouped.length === 0 && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="cart-empty"
+            >
+              <ShoppingBag size={32} style={{ marginBottom: "var(--space-3)", opacity: 0.3 }} />
+              <p>Your tray is empty.</p>
             </motion.div>
           )}
-        </div>
+          {cartGrouped.map((item) => (
+            <motion.div
+              key={item.id}
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -20 }}
+              layout
+              className="cart-item"
+            >
+              <div className="cart-item-info">
+                <span style={{ fontSize: "1.25rem" }}>{item.emoji}</span>
+                <div>
+                  <div style={{ fontWeight: 600, fontSize: "0.9rem" }}>{item.name}</div>
+                  <div style={{ color: "var(--text-muted)", fontSize: "0.8rem" }}>{formatINR(item.price)} each</div>
+                </div>
+              </div>
+              <div className="cart-item-actions">
+                <button
+                  className="btn-icon"
+                  style={{ width: 32, height: 32, borderRadius: "var(--radius-sm)" }}
+                  onClick={() => removeOneFromCart(item.id)}
+                >
+                  <Minus size={14} />
+                </button>
+                <span style={{ fontWeight: 700, fontFamily: "var(--font-mono)", minWidth: 20, textAlign: "center" }}>
+                  {item.qty}
+                </span>
+                <button
+                  className="btn-icon"
+                  style={{ width: 32, height: 32, borderRadius: "var(--radius-sm)" }}
+                  onClick={() => addToCart(menu.find((m) => m.id === item.id) || item)}
+                >
+                  <Plus size={14} />
+                </button>
+              </div>
+            </motion.div>
+          ))}
+        </AnimatePresence>
       </div>
 
+      {cart.length > 0 && (
+        <motion.div layout>
+          <div className="cart-bill card-compact">
+            <div className="cart-bill-row">
+              <span>Items Subtotal</span>
+              <span>{formatINR(subtotal)}</span>
+            </div>
+            <div className="cart-bill-row">
+              <span>SGST (2.5%)</span>
+              <span>{formatINR(sgst)}</span>
+            </div>
+            <div className="cart-bill-row">
+              <span>CGST (2.5%)</span>
+              <span>{formatINR(cgst)}</span>
+            </div>
+            <div className="cart-bill-row">
+              <span>Platform Fee (1%)</span>
+              <span>{formatINR(platformFee)}</span>
+            </div>
+            <div className="cart-total">
+              <span>Total Payable</span>
+              <span>{formatINR(grandTotal)}</span>
+            </div>
+          </div>
+          <button
+            className="btn btn-primary btn-block"
+            onClick={handleOrder}
+            disabled={loading}
+          >
+            {loading ? <span className="loader" style={{ width: 20, height: 20, borderWidth: 2 }} /> : (
+              <>Pay & Get QR <ArrowRight size={18} /></>
+            )}
+          </button>
+        </motion.div>
+      )}
+    </>
+  );
+
+  return (
+    <div className={`app-content ${currentView === "menu" && cart.length > 0 ? "has-cart-bottom-bar" : ""}`}>
+      {currentView === "menu" && (
+        <div className="student-menu-area">
+          <div className="student-header-row">
+            <div>
+              <h2 style={{ fontSize: "clamp(1.5rem, 3vw, 2rem)", display: "flex", alignItems: "center", gap: "var(--space-3)" }}>
+                Today's Menu <Sparkles size={24} color="var(--accent)" />
+              </h2>
+              <p style={{ fontSize: "1rem", marginTop: "var(--space-2)" }}>Select items, review your bill, and pay to generate your pickup QR.</p>
+            </div>
+          </div>
+
+          {fetchingMenu ? (
+            <div style={{ padding: "80px 0", textAlign: "center" }}>
+              <div className="loader loader-lg" />
+            </div>
+          ) : menu.length === 0 ? (
+            <div className="card" style={{ textAlign: "center", padding: "60px 20px" }}>
+              <p>The menu is currently being updated. Check back shortly.</p>
+            </div>
+          ) : (
+            <div className="menu-grid">
+              {menu.map((item) => (
+                <motion.div
+                  key={item.id}
+                  className="card card-interactive menu-card"
+                  whileHover={{ y: -4 }}
+                  transition={{ type: "spring", stiffness: 400, damping: 25 }}
+                >
+                  <div className="menu-card-emoji">{item.emoji || "🍲"}</div>
+                  <div className="menu-card-name">{item.name}</div>
+                  <div className="menu-card-price">{formatINR(item.price)}</div>
+                  {cartQtyMap[item.id] ? (
+                    <div className="menu-qty-controls">
+                      <button
+                        className="menu-qty-btn"
+                        onClick={() => removeOneFromCart(item.id)}
+                        aria-label={`Remove one ${item.name}`}
+                      >
+                        <Minus size={16} />
+                      </button>
+                      <span className="menu-qty-value">{cartQtyMap[item.id]}</span>
+                      <button
+                        className="menu-qty-btn"
+                        onClick={() => addToCart(item)}
+                        aria-label={`Add one ${item.name}`}
+                      >
+                        <Plus size={16} />
+                      </button>
+                    </div>
+                  ) : (
+                    <button
+                      onClick={() => addToCart(item)}
+                      className="btn btn-secondary btn-sm btn-block"
+                    >
+                      <Plus size={16} /> Add
+                    </button>
+                  )}
+                </motion.div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {currentView === "menu" && cart.length > 0 && (
+        <button className="cart-bottom-bar" onClick={() => setCurrentView("cart")}> 
+          <div className="cart-bottom-bar-meta">
+            <span className="cart-bottom-bar-count"><ShoppingBag size={16} /> {cart.length} item{cart.length > 1 ? "s" : ""}</span>
+            <span className="cart-bottom-bar-total">{formatINR(grandTotal)}</span>
+          </div>
+          <span className="cart-bottom-bar-action">View Cart <ArrowRight size={16} /></span>
+        </button>
+      )}
+
+      {currentView === "cart" && (
+        <div className="cart-page-wrap">
+          <div className="cart-page-header">
+            <button className="btn btn-ghost btn-sm" onClick={() => setCurrentView("menu")}>
+              <ArrowLeft size={16} /> Back To Menu
+            </button>
+          </div>
+          <div className="card cart-panel cart-page-panel">
+            <CartContent />
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -1,349 +1,344 @@
-import { useRef } from "react";
+import { useRef, useState, useEffect } from "react";
 import { motion, useScroll, useTransform } from "framer-motion";
-import { ArrowRight, Coffee, Pizza, Croissant, ShieldCheck, Zap, Heart, ChefHat } from "lucide-react";
+import {
+  ArrowRight, Zap, ShieldCheck, ChefHat, Heart,
+  Smartphone, QrCode, UtensilsCrossed
+} from "lucide-react";
+import ThemeToggle from "../../components/ThemeToggle";
+import BrandLogo from "../../components/BrandLogo";
 
-const SparkleIcon = () => (
-  <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
-    <path d="M12 2L14.4 9.6L22 12L14.4 14.4L12 22L9.6 14.4L2 12L9.6 9.6L12 2Z" />
-  </svg>
-);
-
-const FloatingPizza = ({ scrollYProgress }) => {
-  const rotate = useTransform(scrollYProgress, [0, 1], [0, 180]);
-  return (
-    <motion.div
-      style={{ position: "absolute", right: "8%", top: "15%", rotate }}
-      animate={{ y: [0, -20, 0] }}
-      transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
-    >
-      <div style={{
-        padding: "40px",
-        background: "rgba(255,107,107,0.12)",
-        borderRadius: "50%",
-        boxShadow: "0 0 80px rgba(255,107,107,0.3)",
-        backdropFilter: "blur(20px)",
-        border: "1px solid rgba(255,107,107,0.25)"
-      }}>
-        <Pizza size={100} color="#ff6b6b" />
-      </div>
-    </motion.div>
-  );
+const fadeUp = {
+  hidden: { opacity: 0, y: 30 },
+  visible: (delay = 0) => ({
+    opacity: 1, y: 0,
+    transition: { duration: 0.6, delay, ease: [0.25, 0.46, 0.45, 0.94] }
+  })
 };
-
-const FloatingCoffee = ({ scrollYProgress }) => {
-  const y = useTransform(scrollYProgress, [0, 1], [0, -200]);
-  return (
-    <motion.div
-      style={{ position: "absolute", right: "20%", bottom: "12%", y }}
-      animate={{ y: [0, 20, 0] }}
-      transition={{ duration: 5, repeat: Infinity, ease: "easeInOut", delay: 1 }}
-    >
-      <div style={{
-        padding: "28px",
-        background: "rgba(255,255,255,0.05)",
-        borderRadius: "50%",
-        boxShadow: "0 0 60px rgba(255,255,255,0.06)",
-        backdropFilter: "blur(10px)",
-        border: "1px solid rgba(255,255,255,0.1)"
-      }}>
-        <Coffee size={70} color="rgba(255,255,255,0.7)" />
-      </div>
-    </motion.div>
-  );
-};
-
-const HeroContent = ({ scrollYProgress, onOpenAuth }) => {
-  const opacity = useTransform(scrollYProgress, [0, 0.25], [1, 0]);
-  const y = useTransform(scrollYProgress, [0, 0.25], [0, 80]);
-
-  return (
-    <motion.div style={{ opacity, y, maxWidth: "760px", position: "relative", zIndex: 10 }}>
-      <motion.div
-        className="glass-pill"
-        style={{ display: "inline-flex", alignItems: "center", gap: "10px", marginBottom: "28px", color: "#ff6b6b" }}
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.6 }}
-      >
-        <SparkleIcon /> Next Generation Campus Dining
-      </motion.div>
-
-      <motion.h1
-        initial={{ opacity: 0, y: 40 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.8, delay: 0.1 }}
-        style={{
-          fontSize: "clamp(3.5rem, 8vw, 7rem)",
-          fontWeight: 900,
-          lineHeight: 0.95,
-          letterSpacing: "-0.04em",
-          margin: "0 0 24px 0"
-        }}
-      >
-        Taste the{" "}
-        <span style={{
-          background: "linear-gradient(135deg, #ff6b6b, #ff8e53)",
-          WebkitBackgroundClip: "text",
-          WebkitTextFillColor: "transparent",
-          backgroundClip: "text"
-        }}>
-          Future
-        </span>
-      </motion.h1>
-
-      <motion.p
-        initial={{ opacity: 0, y: 30 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.8, delay: 0.2 }}
-        style={{ fontSize: "1.25rem", opacity: 0.65, maxWidth: "540px", lineHeight: 1.65, marginBottom: "44px" }}
-      >
-        Experience frictionless campus dining. Pre-order, skip queues, and collect your food with a single tap.
-      </motion.p>
-
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.6, delay: 0.3 }}
-        style={{ display: "flex", gap: "16px", flexWrap: "wrap" }}
-      >
-        <button
-          className="btn-primary"
-          onClick={onOpenAuth}
-          style={{ padding: "18px 40px", fontSize: "1.15rem" }}
-        >
-          Enter Canteen <ArrowRight size={20} />
-        </button>
-        <button className="btn-secondary" style={{ padding: "18px 28px", fontSize: "1.1rem" }}>
-          Learn More
-        </button>
-      </motion.div>
-    </motion.div>
-  );
-};
-
-const TiltCard = ({ icon: Icon, title, desc, color, delay = 0 }) => (
-  <motion.div
-    className="glass-panel"
-    initial={{ opacity: 0, y: 50 }}
-    whileInView={{ opacity: 1, y: 0 }}
-    whileHover={{ y: -8, scale: 1.02 }}
-    viewport={{ once: true, margin: "-100px" }}
-    transition={{ duration: 0.6, delay }}
-    style={{ padding: "36px 28px" }}
-  >
-    <div style={{
-      width: "72px", height: "72px",
-      background: `${color}18`,
-      borderRadius: "20px",
-      display: "flex", alignItems: "center", justifyContent: "center",
-      marginBottom: "24px",
-      boxShadow: `0 0 30px ${color}30`
-    }}>
-      <Icon size={36} color={color} />
-    </div>
-    <h3 style={{ fontSize: "1.5rem", marginBottom: "12px" }}>{title}</h3>
-    <p style={{ opacity: 0.65, lineHeight: 1.6, fontSize: "1.05rem" }}>{desc}</p>
-  </motion.div>
-);
-
-const FeatureCard = ({ icon: Icon, title, desc, index }) => (
-  <motion.div
-    className="glass-panel"
-    initial={{ opacity: 0, y: 50 }}
-    whileInView={{ opacity: 1, y: 0 }}
-    viewport={{ once: true, margin: "-80px" }}
-    transition={{ duration: 0.5, delay: index * 0.15 }}
-    style={{ display: "flex", alignItems: "flex-start", gap: "20px", padding: "28px" }}
-  >
-    <div style={{
-      width: "56px", height: "56px", flexShrink: 0,
-      background: "rgba(255,107,107,0.12)",
-      borderRadius: "16px",
-      display: "flex", alignItems: "center", justifyContent: "center"
-    }}>
-      <Icon size={28} color="#ff6b6b" />
-    </div>
-    <div>
-      <h3 style={{ fontSize: "1.3rem", marginBottom: "8px" }}>{title}</h3>
-      <p style={{ opacity: 0.65, lineHeight: 1.6 }}>{desc}</p>
-    </div>
-  </motion.div>
-);
 
 export default function LandingPage({ onOpenAuth }) {
   const containerRef = useRef(null);
+  const [scrolled, setScrolled] = useState(false);
 
   const { scrollYProgress } = useScroll({
     target: containerRef,
     offset: ["start start", "end end"]
   });
 
-  const bgOpacity = useTransform(scrollYProgress, [0, 0.5, 1], [1, 0.8, 1]);
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 40);
+    window.addEventListener("scroll", onScroll);
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
+
+  const heroOpacity = useTransform(scrollYProgress, [0, 0.2], [1, 0]);
+  const heroY = useTransform(scrollYProgress, [0, 0.2], [0, 60]);
 
   return (
-    <div ref={containerRef} style={{ background: "#0f1014" }}>
+    <div ref={containerRef}>
 
-      {/* ═══════════════════ HERO ═══════════════════ */}
-      <section style={{
-        minHeight: "100vh",
-        padding: "100px 5% 80px",
-        display: "flex",
-        alignItems: "center",
-        position: "relative",
-        overflow: "hidden"
-      }}>
-        {/* Background Gradient */}
-        <div style={{
-          position: "absolute", inset: 0, pointerEvents: "none",
-          background: "radial-gradient(ellipse 80% 60% at 60% 30%, rgba(255,107,107,0.12), transparent)"
-        }} />
-
-        {/* Floating Grid Lines */}
-        <div style={{
-          position: "absolute", inset: 0, pointerEvents: "none",
-          backgroundImage: "linear-gradient(rgba(255,255,255,0.025) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.025) 1px, transparent 1px)",
-          backgroundSize: "50px 50px"
-        }} />
-
-        <div className="container" style={{ width: "100%", maxWidth: "1200px", margin: "0 auto", padding: "0 5%" }}>
-          <HeroContent scrollYProgress={scrollYProgress} onOpenAuth={onOpenAuth} />
-          <FloatingPizza scrollYProgress={scrollYProgress} />
-          <FloatingCoffee scrollYProgress={scrollYProgress} />
+      {/* ═══ NAV ═══ */}
+      <nav className={`landing-nav ${scrolled ? "scrolled" : ""}`}>
+        <div className="app-topbar-brand">
+          <BrandLogo />
         </div>
+        <div className="flex items-center gap-3">
+          <ThemeToggle />
+          <button className="btn btn-primary btn-sm" onClick={onOpenAuth}>
+            Enter Canteen <ArrowRight size={16} />
+          </button>
+        </div>
+      </nav>
+
+      {/* ═══ HERO ═══ */}
+      <section className="landing-hero">
+        <div className="landing-hero-bg" />
+
+        <div className="landing-container">
+          <motion.div style={{ opacity: heroOpacity, y: heroY }} className="flex flex-col">
+
+            <motion.div
+              className="chip"
+              style={{ alignSelf: "flex-start", color: "var(--accent)", marginBottom: "var(--space-6)" }}
+              variants={fadeUp}
+              initial="hidden"
+              animate="visible"
+              custom={0}
+            >
+              <Zap size={14} />
+              Next Generation Campus Dining
+            </motion.div>
+
+            <motion.h1
+              style={{
+                fontSize: "clamp(2.75rem, 7vw, 5.5rem)",
+                fontWeight: 700,
+                lineHeight: 1,
+                letterSpacing: "-0.04em",
+                marginBottom: "var(--space-6)",
+                maxWidth: "700px"
+              }}
+              variants={fadeUp}
+              initial="hidden"
+              animate="visible"
+              custom={0.1}
+            >
+              Taste the{" "}
+              <span className="text-gradient">Future</span>
+              <br />of Campus Dining
+            </motion.h1>
+
+            <motion.p
+              style={{
+                fontSize: "1.2rem",
+                maxWidth: "500px",
+                lineHeight: 1.7,
+                marginBottom: "var(--space-8)"
+              }}
+              variants={fadeUp}
+              initial="hidden"
+              animate="visible"
+              custom={0.2}
+            >
+              Pre-order meals, skip the queue, and collect your food with a single tap. Built for students who value their time.
+            </motion.p>
+
+            <motion.div
+              className="flex gap-4"
+              style={{ flexWrap: "wrap" }}
+              variants={fadeUp}
+              initial="hidden"
+              animate="visible"
+              custom={0.3}
+            >
+              <button className="btn btn-primary btn-lg" onClick={onOpenAuth}>
+                Get Started <ArrowRight size={20} />
+              </button>
+              <a href="#how-it-works" className="btn btn-secondary btn-lg">
+                See How It Works
+              </a>
+            </motion.div>
+          </motion.div>
+        </div>
+
+        {/* Floating accent orbs */}
+        <motion.div
+          style={{
+            position: "absolute", right: "10%", top: "25%",
+            width: 200, height: 200,
+            borderRadius: "50%",
+            background: "var(--accent-soft)",
+            filter: "blur(80px)",
+            pointerEvents: "none"
+          }}
+          animate={{ y: [0, -30, 0], scale: [1, 1.1, 1] }}
+          transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }}
+        />
+        <motion.div
+          style={{
+            position: "absolute", left: "5%", bottom: "20%",
+            width: 150, height: 150,
+            borderRadius: "50%",
+            background: "var(--accent-secondary-soft)",
+            filter: "blur(60px)",
+            pointerEvents: "none"
+          }}
+          animate={{ y: [0, 20, 0] }}
+          transition={{ duration: 5, repeat: Infinity, ease: "easeInOut", delay: 1 }}
+        />
       </section>
 
-      {/* ═══════════════════ SHOWCASE ═══════════════════ */}
-      <section style={{ padding: "120px 5%", position: "relative" }}>
-        <div style={{ width: "100%", maxWidth: "1200px", margin: "0 auto" }}>
+      {/* ═══ HOW IT WORKS ═══ */}
+      <section id="how-it-works" className="landing-section">
+        <div className="landing-container">
           <motion.div
-            initial={{ opacity: 0, y: 30 }}
+            initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
-            style={{ marginBottom: "70px" }}
           >
-            <p style={{ color: "#ff6b6b", fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: "16px" }}>
-              Our Highlights
-            </p>
-            <h2 style={{ fontSize: "clamp(2.5rem, 5vw, 4rem)", maxWidth: "560px" }}>
-              Savor every selection
+            <p className="landing-section-label">Simple Process</p>
+            <h2 className="landing-section-title">
+              Three taps. That's it.
             </h2>
           </motion.div>
 
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: "24px" }}>
-            <TiltCard icon={Pizza} title="Artisan Pizza" desc="Hand-tossed masterpieces baked fresh daily in our stone ovens." color="#ff6b6b" delay={0} />
-            <TiltCard icon={Croissant} title="Morning Pastries" desc="Golden, flaky pastries crafted at dawn for the perfect start." color="#f5a623" delay={0.1} />
-            <TiltCard icon={Coffee} title="Specialty Coffee" desc="Single-origin beans, expertly brewed to energize your day." color="#4fc3f7" delay={0.2} />
-          </div>
-        </div>
-      </section>
-
-      {/* ═══════════════════ FEATURES (Sticky Scroll) ═══════════════════ */}
-      <section style={{ padding: "120px 5%" }}>
-        <div style={{
-          width: "100%", maxWidth: "1200px", margin: "0 auto",
-          display: "grid", gridTemplateColumns: "1fr 1fr", gap: "80px", alignItems: "start"
-        }}>
-          <div style={{ position: "sticky", top: "20vh" }}>
-            <motion.div
-              initial={{ opacity: 0, x: -40 }}
-              whileInView={{ opacity: 1, x: 0 }}
-              viewport={{ once: true }}
-            >
-              <p style={{ color: "#ff6b6b", fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: "16px" }}>
-                Why Tap2Eat?
-              </p>
-              <h2 style={{ fontSize: "clamp(2.5rem, 4vw, 3.5rem)", marginBottom: "24px" }}>
-                Excellence<br />in every tap.
-              </h2>
-              <p style={{ fontSize: "1.15rem", opacity: 0.65, lineHeight: 1.7, marginBottom: "40px" }}>
-                From order to collection, the entire experience is invisible, secure, and blazing fast.
-              </p>
-              <button className="btn-primary" onClick={onOpenAuth} style={{ padding: "16px 36px" }}>
-                Get Started <ArrowRight size={18} />
-              </button>
-            </motion.div>
-          </div>
-
-          <div style={{ display: "flex", flexDirection: "column", gap: "20px", paddingTop: "10vh" }}>
+          <div className="steps-grid">
             {[
-              { icon: Zap, title: "Lightning Fast Ordering", desc: "Skip the queues. Order ahead and pick up exactly when you want." },
-              { icon: ShieldCheck, title: "Secure Payments via Razorpay", desc: "Bank-grade encryption for every campus transaction you make." },
-              { icon: ChefHat, title: "Live Kitchen Sync", desc: "Real-time status updates straight from the kitchen to your phone." },
-            ].map((f, i) => (
-              <FeatureCard key={i} index={i} {...f} />
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ═══════════════════ STATS ═══════════════════ */}
-      <section style={{ padding: "80px 5%" }}>
-        <div style={{ width: "100%", maxWidth: "1200px", margin: "0 auto" }}>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "24px" }}>
-            {[
-              { number: "5,000+", label: "Orders Served" },
-              { number: "200+", label: "Menu Items" },
-              { number: "99.9%", label: "Uptime" },
-              { number: "<30s", label: "Avg Pickup Time" },
-            ].map((stat, i) => (
+              { num: "1", icon: Smartphone, title: "Browse & Order", desc: "Explore the live menu and add items to your tray. Prices update in real-time." },
+              { num: "2", icon: ShieldCheck, title: "Pay Securely", desc: "Complete checkout through Razorpay. Bank-grade encryption protects every transaction." },
+              { num: "3", icon: QrCode, title: "Scan & Collect", desc: "Show your QR code at the counter. The kitchen marks your order fulfilled instantly." },
+            ].map((step, i) => (
               <motion.div
                 key={i}
-                className="glass-panel"
-                initial={{ opacity: 0, scale: 0.9 }}
-                whileInView={{ opacity: 1, scale: 1 }}
-                viewport={{ once: true }}
-                transition={{ delay: i * 0.1 }}
-                style={{ textAlign: "center", padding: "40px 24px" }}
+                className="card card-interactive step-card"
+                initial={{ opacity: 0, y: 40 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true, margin: "-80px" }}
+                transition={{ delay: i * 0.15, duration: 0.5 }}
               >
-                <div style={{ fontSize: "3rem", fontWeight: 900, color: "#ff6b6b", marginBottom: "8px" }}>
-                  {stat.number}
-                </div>
-                <div style={{ opacity: 0.6, fontSize: "1.05rem" }}>{stat.label}</div>
+                <div className="step-number">{step.num}</div>
+                <step.icon size={32} color="var(--accent)" style={{ margin: "0 auto var(--space-4)" }} />
+                <h3>{step.title}</h3>
+                <p>{step.desc}</p>
               </motion.div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* ═══════════════════ CTA ═══════════════════ */}
-      <section style={{
-        padding: "140px 5%",
-        textAlign: "center",
-        position: "relative",
-        overflow: "hidden"
-      }}>
-        <div style={{
-          position: "absolute", inset: 0, pointerEvents: "none",
-          background: "radial-gradient(ellipse 60% 50% at 50% 50%, rgba(255,107,107,0.1), transparent)"
-        }} />
+      {/* ═══ FEATURES — BENTO GRID ═══ */}
+      <section className="landing-section">
+        <div className="landing-container">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+          >
+            <p className="landing-section-label">Why Tap2Eat?</p>
+            <h2 className="landing-section-title">
+              Excellence in every tap.
+            </h2>
+            <p className="landing-section-desc">
+              From ordering to collection, every interaction is fast, invisible, and secure.
+            </p>
+          </motion.div>
+
+          <div className="bento-grid">
+            {[
+              {
+                icon: Zap, title: "Lightning Fast", color: "var(--accent)",
+                bg: "var(--accent-soft)",
+                desc: "Skip queues entirely. Order ahead and pick up exactly when you want — average collection time under 30 seconds.",
+                wide: true
+              },
+              {
+                icon: ShieldCheck, title: "Bank-Grade Security", color: "var(--accent-secondary)",
+                bg: "var(--accent-secondary-soft)",
+                desc: "Every payment processed through Razorpay's encrypted gateway. Your money is always safe."
+              },
+              {
+                icon: ChefHat, title: "Live Kitchen Sync", color: "var(--warning)",
+                bg: "var(--warning-soft)",
+                desc: "Real-time order status updates straight from the kitchen to your device."
+              },
+              {
+                icon: UtensilsCrossed, title: "Curated Daily Menus", color: "var(--accent)",
+                bg: "var(--accent-soft)",
+                desc: "Fresh selections every day, updated by the canteen team. From artisan pizza to specialty coffee — handpicked and freshly prepared.",
+                wide: true
+              }
+            ].map((item, i) => (
+              <motion.div
+                key={i}
+                className={`card card-interactive bento-item ${item.wide ? "bento-wide" : ""}`}
+                initial={{ opacity: 0, y: 40 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true, margin: "-60px" }}
+                transition={{ delay: i * 0.1, duration: 0.5 }}
+              >
+                <div className="bento-icon" style={{ background: item.bg }}>
+                  <item.icon size={28} color={item.color} />
+                </div>
+                <h3>{item.title}</h3>
+                <p>{item.desc}</p>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ═══ PLATFORM PILLARS ═══ */}
+      <section className="landing-section">
+        <div className="landing-container">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+          >
+            <p className="landing-section-label">Built To Last</p>
+            <h2 className="landing-section-title">
+              Strong foundations from day one.
+            </h2>
+            <p className="landing-section-desc">
+              Tap2Eat is designed around reliability, transparency, and ease of use so the experience feels premium from the very first order.
+            </p>
+          </motion.div>
+
+          <div className="stats-grid">
+            {[
+              {
+                icon: Zap,
+                kicker: "Experience",
+                number: "Queue-Free",
+                label: "Pre-order before rush hour and collect quickly with a flow built to cut queue pressure."
+              },
+              {
+                icon: QrCode,
+                kicker: "Visibility",
+                number: "Transparent",
+                label: "Live order updates and QR handoff help students and canteen staff stay in sync."
+              },
+              {
+                icon: ShieldCheck,
+                kicker: "Trust",
+                number: "Secure",
+                label: "Trusted payment rails plus encrypted checkout protect each transaction end to end."
+              },
+              {
+                icon: ChefHat,
+                kicker: "Operations",
+                number: "Role-Based",
+                label: "Purpose-built views support students, kitchen teams, and canteen administrators."
+              },
+            ].map((pillar, i) => (
+              <motion.div
+                key={i}
+                className="card stat-card"
+                initial={{ opacity: 0, y: 30 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: i * 0.08, duration: 0.45 }}
+              >
+                <div className="stat-icon">
+                  <pillar.icon size={20} />
+                </div>
+                <div className="stat-kicker">{pillar.kicker}</div>
+                <div className="stat-number">{pillar.number}</div>
+                <div className="stat-label">{pillar.label}</div>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ═══ CTA ═══ */}
+      <section className="landing-cta">
         <motion.div
           initial={{ opacity: 0, y: 40 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
+          className="landing-container"
         >
-          <Heart size={64} color="#ff6b6b" style={{ marginBottom: "28px", filter: "drop-shadow(0 0 20px rgba(255,107,107,0.5))" }} />
-          <h2 style={{ fontSize: "clamp(3rem, 6vw, 5rem)", marginBottom: "20px" }}>Ready to dine?</h2>
-          <p style={{ fontSize: "1.25rem", opacity: 0.65, maxWidth: "540px", margin: "0 auto 44px", lineHeight: 1.65 }}>
-            Join thousands of students experiencing the future of campus hospitality.
+          <Heart size={56} color="var(--accent)" style={{ marginBottom: "var(--space-6)", filter: "drop-shadow(0 0 15px var(--accent-glow))" }} />
+          <h2 style={{ fontSize: "clamp(2.25rem, 5vw, 4rem)", marginBottom: "var(--space-5)" }}>
+            Ready to dine smarter?
+          </h2>
+          <p style={{ fontSize: "1.15rem", maxWidth: "480px", margin: "0 auto var(--space-8)" }}>
+            Be among the first to experience a faster, smoother campus dining flow.
           </p>
-          <button
-            className="btn-primary"
-            onClick={onOpenAuth}
-            style={{ padding: "22px 64px", fontSize: "1.25rem" }}
-          >
-            Unlock Tap2Eat
+          <button className="btn btn-primary btn-lg animate-pulse-glow" onClick={onOpenAuth}>
+            Unlock Tap2Eat <ArrowRight size={20} />
           </button>
         </motion.div>
       </section>
 
-      {/* FOOTER */}
-      <footer style={{
-        borderTop: "1px solid rgba(255,255,255,0.08)",
-        padding: "40px 5%",
-        textAlign: "center",
-        opacity: 0.5
-      }}>
-        <p>&copy; 2026 Tap2Eat — Premium Campus Dining</p>
+      {/* ═══ FOOTER ═══ */}
+      <footer className="landing-footer">
+        <div className="landing-footer-inner">
+          <div className="app-topbar-brand" style={{ fontSize: "1.2rem" }}>
+            <BrandLogo size="sm" />
+          </div>
+          <p>&copy; 2026 Tap2Eat — Premium Campus Dining</p>
+        </div>
       </footer>
     </div>
   );

@@ -20,45 +20,76 @@ function Login({ setUser, setRole, onClose }) {
   };
 
   const handleBypass = (role) => {
-    setUser({ uid: `demo-${role}-123`, email: `${role}@demo.com`, displayName: `Demo ${role === 'admin' ? 'Admin' : 'Student'}` });
+    setUser({
+      uid: `demo-${role}-123`,
+      email: `${role}@demo.com`,
+      displayName: `Demo ${role === "admin" ? "Admin" : "Student"}`
+    });
     setRole(role);
-    if(onClose) onClose();
+    if (onClose) onClose();
   };
 
   return (
     <>
-      <div className="input-group">
-        <label className="input-label">Email Address</label>
-        <input 
-          className="input-field" 
-          placeholder="your@email.com" 
+      <div className="form-group">
+        <label className="form-label">Email Address</label>
+        <input
+          className="form-input"
+          placeholder="your@email.com"
           autoComplete="email"
-          onChange={(e) => setEmail(e.target.value)} 
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
         />
       </div>
 
-      <div className="input-group">
-        <label className="input-label">Password</label>
-        <input 
-          className="input-field" 
-          type="password" 
-          placeholder="••••••••" 
+      <div className="form-group">
+        <label className="form-label">Password</label>
+        <input
+          className="form-input"
+          type="password"
+          placeholder="••••••••"
           autoComplete="current-password"
-          onChange={(e) => setPassword(e.target.value)} 
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
         />
       </div>
 
-      <button className="btn-primary" style={{ width: "100%", marginTop: "10px" }} onClick={handleLogin} disabled={loading}>
-        {loading ? <span className="loader" style={{ width: '20px', height: '20px', borderWidth: '2px' }}></span> : "Sign In"}
+      <button
+        className="btn btn-primary btn-block"
+        onClick={handleLogin}
+        disabled={loading}
+        style={{ marginTop: "var(--space-3)" }}
+      >
+        {loading ? <span className="loader" style={{ width: 20, height: 20, borderWidth: 2 }} /> : "Sign In"}
       </button>
 
-      <div style={{ marginTop: "30px", borderTop: "1px solid var(--theme-border)", paddingTop: "20px", textAlign: "center" }}>
-        <p style={{ opacity: 0.6, fontSize: "0.9rem", marginBottom: "15px" }}>Testing without Firebase?</p>
-        <div style={{ display: "flex", gap: "10px", justifyContent: "center" }}>
-          <button className="btn-secondary" style={{ padding: "10px 15px", fontSize: "0.9rem" }} onClick={() => handleBypass('student')}>
+      <div style={{
+        marginTop: "var(--space-6)",
+        borderTop: "1px solid var(--border)",
+        paddingTop: "var(--space-5)",
+        textAlign: "center"
+      }}>
+        <p style={{ color: "var(--text-muted)", fontSize: "0.85rem", marginBottom: "var(--space-4)" }}>
+          Testing without Firebase?
+        </p>
+        <div className="flex gap-3" style={{ justifyContent: "center" }}>
+          <button className="btn btn-secondary btn-sm" onClick={() => handleBypass("student")}>
             Demo Student
           </button>
-          <button className="btn-secondary" style={{ padding: "10px 15px", fontSize: "0.9rem", borderColor: "var(--theme-accent)", color: "var(--theme-accent)" }} onClick={() => handleBypass('admin')}>
+          <button
+            className="btn btn-sm"
+            style={{
+              background: "var(--accent-soft)",
+              color: "var(--accent)",
+              border: "1px solid var(--border-accent)",
+              padding: "10px 20px",
+              borderRadius: "var(--radius-full)",
+              fontWeight: 600,
+              cursor: "pointer",
+              fontFamily: "var(--font-body)"
+            }}
+            onClick={() => handleBypass("admin")}
+          >
             Demo Admin
           </button>
         </div>

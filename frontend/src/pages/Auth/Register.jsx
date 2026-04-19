@@ -13,12 +13,7 @@ function Register() {
     try {
       setLoading(true);
       const res = await createUserWithEmailAndPassword(auth, email, password);
-
-      await setDoc(doc(db, "users", res.user.uid), {
-        email,
-        role
-      });
-      // automatically jumps to logged-in via onAuthStateChanged
+      await setDoc(doc(db, "users", res.user.uid), { email, role });
     } catch (err) {
       alert(err.message);
     } finally {
@@ -28,37 +23,48 @@ function Register() {
 
   return (
     <>
-      <div className="input-group">
-        <label className="input-label">Email Address</label>
-        <input 
-          className="input-field" 
-          placeholder="student@college.edu" 
+      <div className="form-group">
+        <label className="form-label">Email Address</label>
+        <input
+          className="form-input"
+          placeholder="student@college.edu"
           autoComplete="email"
-          onChange={(e) => setEmail(e.target.value)} 
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
         />
       </div>
 
-      <div className="input-group">
-        <label className="input-label">Password</label>
-        <input 
-          className="input-field" 
-          type="password" 
-          placeholder="••••••••" 
+      <div className="form-group">
+        <label className="form-label">Password</label>
+        <input
+          className="form-input"
+          type="password"
+          placeholder="••••••••"
           autoComplete="new-password"
-          onChange={(e) => setPassword(e.target.value)} 
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
         />
       </div>
 
-      <div className="input-group">
-        <label className="input-label">Select Role</label>
-        <select className="input-field" onChange={(e) => setRole(e.target.value)} defaultValue="student">
+      <div className="form-group">
+        <label className="form-label">Select Role</label>
+        <select
+          className="form-input"
+          onChange={(e) => setRole(e.target.value)}
+          defaultValue="student"
+        >
           <option value="student">Student</option>
           <option value="admin">Canteen Admin</option>
         </select>
       </div>
 
-      <button className="btn-primary" style={{ width: "100%", marginTop: "10px" }} onClick={handleRegister} disabled={loading}>
-        {loading ? <span className="loader" style={{ width: '20px', height: '20px', borderWidth: '2px' }}></span> : "Create Account"}
+      <button
+        className="btn btn-primary btn-block"
+        onClick={handleRegister}
+        disabled={loading}
+        style={{ marginTop: "var(--space-3)" }}
+      >
+        {loading ? <span className="loader" style={{ width: 20, height: 20, borderWidth: 2 }} /> : "Create Account"}
       </button>
     </>
   );
