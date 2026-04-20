@@ -24,10 +24,10 @@ function AdminMenu() {
     if (isOfflineMode) {
       setTimeout(() => {
         setMenuItems([
-          { id: "1", name: "Artisan Pizza", price: 250, emoji: "🍕", available: true },
-          { id: "2", name: "Specialty Coffee", price: 120, emoji: "☕", available: true },
-          { id: "3", name: "Morning Croissant", price: 90, emoji: "🥐", available: true },
-          { id: "4", name: "Fresh Salad", price: 180, emoji: "🥗", available: false }
+          { id: "1", name: "Artisan Pizza", price: 250, available: true },
+          { id: "2", name: "Specialty Coffee", price: 120, available: true },
+          { id: "3", name: "Morning Croissant", price: 90, available: true },
+          { id: "4", name: "Fresh Salad", price: 180, available: false }
         ]);
       }, 500);
       return;
@@ -165,7 +165,7 @@ function AdminMenu() {
 
       {menuItems.length === 0 ? (
         <div className="card" style={{ padding: "60px 20px", textAlign: "center" }}>
-          <p style={{ fontSize: "1.1rem" }}>No items in the menu yet. Start by adding one above! 🍕</p>
+          <p style={{ fontSize: "1.1rem" }}>No items in the menu yet. Start by adding one above!</p>
         </div>
       ) : (
         <div className="menu-mgmt-grid">
@@ -181,9 +181,6 @@ function AdminMenu() {
               <div>
                 <div className="menu-mgmt-card-header">
                   <div>
-                    <div style={{ fontSize: "1.75rem", marginBottom: "var(--space-2)" }}>
-                      {item.emoji || "🍲"}
-                    </div>
                     <h3 style={{ fontSize: "1.1rem", margin: 0 }}>{item.name}</h3>
                   </div>
                   <span className={`badge ${item.available ? "badge-success" : "badge-neutral"}`}>

@@ -1082,18 +1082,6 @@ select.form-input option {
   font-size: 1rem;
 }
 
-.menu-card-emoji {
-  font-size: 2.75rem;
-  margin-bottom: var(--space-4);
-  width: 64px;
-  height: 64px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: var(--bg-surface);
-  border-radius: var(--radius-md);
-}
-
 .menu-card-name {
   font-size: 1.15rem;
   font-weight: 600;
@@ -1272,17 +1260,167 @@ select.form-input option {
 
 .qr-card {
   text-align: center;
-  max-width: 420px;
+  max-width: 500px;
   width: 100%;
+  padding: var(--space-8) var(--space-6) !important;
+  background: linear-gradient(135deg, var(--bg-primary) 0%, var(--bg-secondary) 100%);
+  border: 2px solid var(--border);
+  overflow: hidden;
+}
+
+.qr-card.qr-card-premium {
+  position: relative;
+  box-shadow: 
+    0 20px 60px rgba(0, 0, 0, 0.12),
+    0 0 1px rgba(0, 0, 0, 0.05);
+}
+
+.qr-card.qr-card-premium::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  right: -50%;
+  width: 200%;
+  height: 200%;
+  background: radial-gradient(circle, var(--accent-soft) 0%, transparent 70%);
+  opacity: 0.3;
+  pointer-events: none;
+}
+
+.qr-success-icon {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-bottom: var(--space-5);
+  height: 80px;
+}
+
+.qr-content {
+  position: relative;
+  z-index: 1;
+}
+
+.qr-title {
+  font-size: clamp(1.5rem, 4vw, 2.5rem);
+  font-weight: 800;
+  margin-bottom: var(--space-2);
+  background: linear-gradient(135deg, var(--accent-secondary), var(--accent));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.qr-subtitle {
+  font-size: 1.1rem;
+  color: var(--text-secondary);
+  margin-bottom: var(--space-6);
+  font-weight: 500;
+}
+
+.qr-code-wrapper {
+  margin: var(--space-8) 0;
 }
 
 .qr-code-container {
   background: #FFFFFF;
   padding: var(--space-5);
+  border-radius: var(--radius-xl);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  box-shadow: 
+    0 10px 40px rgba(0, 0, 0, 0.08),
+    0 2px 8px rgba(0, 0, 0, 0.04);
+  border: 1px solid rgba(0, 0, 0, 0.05);
+  margin: 0 auto;
+  width: fit-content;
+}
+
+.qr-instructions {
+  background: var(--accent-soft);
+  padding: var(--space-5);
   border-radius: var(--radius-lg);
-  display: inline-block;
-  box-shadow: var(--shadow-md);
   margin: var(--space-6) 0;
+  text-align: left;
+}
+
+.qr-instruction-title {
+  font-weight: 700;
+  font-size: 0.95rem;
+  color: var(--text-primary);
+  margin-bottom: var(--space-3);
+  text-align: center;
+}
+
+.qr-instruction-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.qr-instruction-list li {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  font-size: 0.95rem;
+  color: var(--text-secondary);
+}
+
+.qr-step {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--accent);
+  color: white;
+  font-weight: 700;
+  font-size: 0.85rem;
+  flex-shrink: 0;
+}
+
+.qr-actions {
+  margin-top: var(--space-7);
+}
+
+/* Mobile Responsive QR Card */
+@media (max-width: 600px) {
+  .qr-card {
+    padding: var(--space-6) var(--space-4) !important;
+    border-radius: var(--radius-xl);
+  }
+
+  .qr-title {
+    font-size: 1.75rem;
+  }
+
+  .qr-subtitle {
+    font-size: 1rem;
+  }
+
+  .qr-code-container {
+    padding: var(--space-4);
+  }
+
+  .qr-instructions {
+    padding: var(--space-4);
+    margin: var(--space-5) 0;
+  }
+
+  .qr-instruction-list li {
+    font-size: 0.9rem;
+    gap: var(--space-2);
+  }
+
+  .qr-step {
+    width: 24px;
+    height: 24px;
+    font-size: 0.75rem;
+  }
 }
 
 /* ═══════════════════════════════════════════════════
@@ -1649,6 +1787,15 @@ select.form-input option {
   }
 }
 
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 .animate-fade-in-up {
   animation: fadeInUp var(--transition-slow) ease both;
 }
@@ -1724,6 +1871,29 @@ select.form-input option {
   .has-cart-bottom-bar {
     padding-bottom: 102px;
   }
+
+  .order-items-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: var(--space-3);
+  }
+
+  .admin-stat-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .menu-mgmt-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: var(--space-4);
+  }
+
+  .menu-grid {
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: var(--space-4);
+  }
+
+  .menu-card {
+    padding: var(--space-5);
+  }
 }
 
 /* ═══════════════════════════════════════════════════
@@ -1762,7 +1932,7 @@ select.form-input option {
   }
 
   .menu-grid {
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
     gap: var(--space-3);
   }
 
@@ -1770,30 +1940,64 @@ select.form-input option {
     padding: var(--space-4);
   }
 
-  .menu-card-emoji {
-    font-size: 2rem;
-    width: 48px;
-    height: 48px;
-  }
-
   .menu-card-price {
     font-size: 1.15rem;
   }
 
+  .menu-card h3 {
+    font-size: 0.95rem;
+  }
+
   .order-items-grid {
     grid-template-columns: 1fr;
+    gap: var(--space-2);
+  }
+
+  .order-item {
+    padding: var(--space-3);
+    background: var(--bg-secondary);
+    border-radius: var(--radius-md);
+    font-size: 0.95rem;
   }
 
   .admin-page-header {
     flex-direction: column;
+    align-items: flex-start;
+    gap: var(--space-3);
+  }
+
+  .admin-page-header h2 {
+    font-size: 1.5rem;
+  }
+
+  .admin-stat-grid {
+    grid-template-columns: 1fr;
+    gap: var(--space-4);
+  }
+
+  .admin-stat-card {
+    gap: var(--space-3);
   }
 
   .menu-mgmt-form {
     flex-direction: column;
+    gap: var(--space-3);
+  }
+
+  .menu-mgmt-form > div {
+    width: 100% !important;
+  }
+
+  .menu-mgmt-form button {
+    width: 100%;
   }
 
   .menu-mgmt-grid {
     grid-template-columns: 1fr;
+  }
+
+  .menu-mgmt-card {
+    padding: var(--space-4);
   }
 
   .landing-nav {

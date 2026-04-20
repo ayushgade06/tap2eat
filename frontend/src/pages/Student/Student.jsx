@@ -33,12 +33,12 @@ export default function Student() {
     if (isOfflineMode) {
       setTimeout(() => {
         setMenu([
-          { id: "1", name: "Artisan Pizza", price: 250, emoji: "🍕", available: true },
-          { id: "2", name: "Specialty Coffee", price: 120, emoji: "☕", available: true },
-          { id: "3", name: "Morning Croissant", price: 90, emoji: "🥐", available: true },
-          { id: "4", name: "Fresh Salad", price: 180, emoji: "🥗", available: true },
-          { id: "5", name: "Grilled Sandwich", price: 150, emoji: "🥪", available: true },
-          { id: "6", name: "Masala Chai", price: 40, emoji: "🍵", available: true }
+          { id: "1", name: "Artisan Pizza", price: 250, available: true },
+          { id: "2", name: "Specialty Coffee", price: 120, available: true },
+          { id: "3", name: "Morning Croissant", price: 90, available: true },
+          { id: "4", name: "Fresh Salad", price: 180, available: true },
+          { id: "5", name: "Grilled Sandwich", price: 150, available: true },
+          { id: "6", name: "Masala Chai", price: 40, available: true }
         ]);
         setFetchingMenu(false);
       }, 800);
@@ -193,28 +193,88 @@ export default function Student() {
       <div className="app-content">
         <div className="qr-view">
           <motion.div
-            initial={{ scale: 0.85, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            transition={{ type: "spring", bounce: 0.4 }}
-            className="card qr-card"
+            initial={{ scale: 0.85, opacity: 0, y: 20 }}
+            animate={{ scale: 1, opacity: 1, y: 0 }}
+            transition={{ type: "spring", bounce: 0.35, duration: 0.6 }}
+            className="card qr-card qr-card-premium"
           >
+            {/* Success Icon */}
             <motion.div
-              initial={{ scale: 0 }}
-              animate={{ scale: 1 }}
-              transition={{ delay: 0.2, type: "spring" }}
+              initial={{ scale: 0, rotate: -180 }}
+              animate={{ scale: 1, rotate: 0 }}
+              transition={{ delay: 0.15, type: "spring", bounce: 0.6 }}
+              className="qr-success-icon"
             >
-              <CheckCircle2 size={56} color="var(--accent-secondary)" style={{ margin: "0 auto var(--space-4)", display: "block" }} />
+              <CheckCircle2 size={64} color="var(--accent-secondary)" />
             </motion.div>
-            <h2 style={{ fontSize: "1.75rem", marginBottom: "var(--space-2)" }}>Order Confirmed!</h2>
-            <p style={{ marginBottom: "var(--space-6)" }}>Present this code at the pickup counter.</p>
 
-            <div className="qr-code-container">
-              <QRCodeCanvas value={qrToken} size={200} />
+            {/* Main Content */}
+            <div className="qr-content">
+              <motion.h1 
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.3 }}
+                className="qr-title"
+              >
+                Order Confirmed!
+              </motion.h1>
+              
+              <motion.p 
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.4 }}
+                className="qr-subtitle"
+              >
+                Your meal is being prepared
+              </motion.p>
+
+              {/* QR Code with enhanced styling */}
+              <motion.div
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ delay: 0.5 }}
+                className="qr-code-wrapper"
+              >
+                <div className="qr-code-container">
+                  <QRCodeCanvas 
+                    value={qrToken} 
+                    size={200}
+                    level="H"
+                    includeMargin={true}
+                  />
+                </div>
+              </motion.div>
+
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.6 }}
+                className="qr-instructions"
+              >
+                <p className="qr-instruction-title">What's next?</p>
+                <ul className="qr-instruction-list">
+                  <li><span className="qr-step">1</span> Save or screenshot this code</li>
+                  <li><span className="qr-step">2</span> Head to the pickup counter</li>
+                  <li><span className="qr-step">3</span> Admin will scan your code</li>
+                </ul>
+              </motion.div>
+
+              {/* Action Buttons */}
+              <div className="qr-actions">
+                <motion.button 
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.7 }}
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  className="btn btn-secondary btn-block"
+                  onClick={() => setQrToken("")}
+                >
+                  <ArrowRight size={18} />
+                  Place Another Order
+                </motion.button>
+              </div>
             </div>
-
-            <button className="btn btn-secondary btn-block" onClick={() => setQrToken("")}>
-              Start New Order
-            </button>
           </motion.div>
         </div>
       </div>
@@ -256,7 +316,6 @@ export default function Student() {
               className="cart-item"
             >
               <div className="cart-item-info">
-                <span style={{ fontSize: "1.25rem" }}>{item.emoji}</span>
                 <div>
                   <div style={{ fontWeight: 600, fontSize: "0.9rem" }}>{item.name}</div>
                   <div style={{ color: "var(--text-muted)", fontSize: "0.8rem" }}>{formatINR(item.price)} each</div>
@@ -354,7 +413,6 @@ export default function Student() {
                   whileHover={{ y: -4 }}
                   transition={{ type: "spring", stiffness: 400, damping: 25 }}
                 >
-                  <div className="menu-card-emoji">{item.emoji || "🍲"}</div>
                   <div className="menu-card-name">{item.name}</div>
                   <div className="menu-card-price">{formatINR(item.price)}</div>
                   {cartQtyMap[item.id] ? (

@@ -7,23 +7,26 @@ import {
   onSnapshot
 } from "firebase/firestore";
 import { motion } from "framer-motion";
-import { Clock, Package, IndianRupee } from "lucide-react";
+import { Clock, Package, IndianRupee, RefreshCw } from "lucide-react";
 
 function AdminDashboard() {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
 
-  useEffect(() => {
+  const setupOrdersListener = () => {
+    setLoading(true);
+    
     if (isOfflineMode) {
       setTimeout(() => {
         setOrders([
-          { id: "demo-ord-101", totalAmount: 370, items: [{ name: "Artisan Pizza", emoji: "🍕" }, { name: "Specialty Coffee", emoji: "☕" }] },
-          { id: "demo-ord-102", totalAmount: 180, items: [{ name: "Fresh Salad", emoji: "🥗" }] },
-          { id: "demo-ord-103", totalAmount: 290, items: [{ name: "Morning Croissant", emoji: "🥐" }, { name: "Masala Chai", emoji: "🍵" }] }
+          { id: "demo-ord-101", totalAmount: 370, items: [{ name: "Artisan Pizza" }, { name: "Specialty Coffee" }] },
+          { id: "demo-ord-102", totalAmount: 180, items: [{ name: "Fresh Salad" }] },
+          { id: "demo-ord-103", totalAmount: 290, items: [{ name: "Morning Croissant" }, { name: "Masala Chai" }] }
         ]);
         setLoading(false);
-      }, 800);
-      return;
+      }, 500);
+      return () => {};
     }
 
     const q = query(
@@ -32,17 +35,42 @@ function AdminDashboard() {
       where("orderStatus", "==", "created")
     );
 
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      const list = [];
-      snapshot.forEach((doc) => {
-        list.push({ id: doc.id, ...doc.data() });
-      });
-      setOrders(list);
-      setLoading(false);
-    });
+    const unsubscribe = onSnapshot(
+      q,
+      (snapshot) => {
+        const list = [];
+        snapshot.forEach((doc) => {
+          list.push({ id: doc.id, ...doc.data() });
+        });
+        setOrders(list);
+        setLoading(false);
+        setRefreshing(false);
+      },
+      (error) => {
+        console.error("Error fetching orders:", error);
+        setLoading(false);
+        setRefreshing(false);
+      }
+    );
 
-    return () => unsubscribe();
+    return unsubscribe;
+  };
+
+  useEffect(() => {
+    const unsubscribe = setupOrdersListener();
+    return () => {
+      if (typeof unsubscribe === 'function') {
+        unsubscribe();
+      }
+    };
   }, []);
+
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    setTimeout(() => {
+      setRefreshing(false);
+    }, 500);
+  };
 
   const totalRevenue = orders.reduce((sum, o) => sum + (o.totalAmount || 0), 0);
 
@@ -53,6 +81,7 @@ function AdminDashboard() {
       transition={{ duration: 0.4 }}
     >
       <div className="admin-page-header">
+        <div></div>
         <div>
           <h2>
             <Package size={28} color="var(--accent)" />
@@ -60,6 +89,14 @@ function AdminDashboard() {
           </h2>
           <p>Manage live orders and fulfillment</p>
         </div>
+        <button 
+          className="btn btn-sm btn-ghost" 
+          onClick={handleRefresh}
+          disabled={refreshing || loading}
+          title="Refresh orders"
+        >
+          <RefreshCw size={18} style={{ animation: refreshing ? 'spin 1s linear infinite' : 'none' }} />
+        </button>
       </div>
 
       {/* Stats */}
@@ -119,7 +156,6 @@ function AdminDashboard() {
                 <div className="order-items-grid">
                   {order.items?.map((item, index) => (
                     <div key={index} className="order-item">
-                      <span>{item.emoji || "🔸"}</span>
                       <span>{item.name}</span>
                     </div>
                   ))}
