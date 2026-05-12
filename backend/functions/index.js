@@ -7,11 +7,20 @@ const cors = require("cors")({ origin: true });
 admin.initializeApp();
 const db = admin.firestore();
 
-// Razorpay configuration using environment variables
-const razorpay = new Razorpay({
-  key_id: process.env.RAZORPAY_KEY_ID,
-  key_secret: process.env.RAZORPAY_KEY_SECRET
-});
+// Razorpay configuration
+let razorpay;
+
+if (
+  process.env.RAZORPAY_KEY_ID &&
+  process.env.RAZORPAY_KEY_SECRET
+) {
+
+  razorpay = new Razorpay({
+    key_id: process.env.RAZORPAY_KEY_ID,
+    key_secret: process.env.RAZORPAY_KEY_SECRET
+  });
+
+}
 
 
 // ==========================
@@ -20,29 +29,47 @@ const razorpay = new Razorpay({
 exports.createOrder = functions.https.onRequest((req, res) => {
   cors(req, res, async () => {
     try {
+
       const { userId, items, totalAmount } = req.body;
 
       if (!userId || !items || !totalAmount) {
-        return res.status(400).json({ error: "Missing fields" });
+        return res.status(400).json({
+          error: "Missing fields"
+        });
       }
 
       const orderRef = await db.collection("orders").add({
+
         userId,
+
         items,
+
         totalAmount,
+
         paymentStatus: "pending",
-        orderStatus: "created",
-        timestamp: Date.now()
+
+        orderStatus: "pending",
+
+        createdAt: Date.now(),
+
+        expiryTime: null,
+
+        qrToken: null
+
       });
 
-      res.json({
+      return res.json({
         success: true,
         orderId: orderRef.id
       });
 
     } catch (err) {
+
       console.error(err);
-      res.status(500).json({ error: "Failed to create order" });
+
+      return res.status(500).json({
+        error: "Failed to create order"
+      });
     }
   });
 });
@@ -52,7 +79,9 @@ exports.createOrder = functions.https.onRequest((req, res) => {
 // 2️⃣ CREATE RAZORPAY ORDER
 // ==========================
 exports.createRazorpayOrder = functions.https.onRequest((req, res) => {
+
   cors(req, res, () => {
+
     if (req.method !== "POST") {
       return res.status(405).send("Method Not Allowed");
     }
@@ -60,7 +89,9 @@ exports.createRazorpayOrder = functions.https.onRequest((req, res) => {
     const amount = req.body.amount;
 
     if (!amount) {
-      return res.status(400).json({ error: "Amount is required" });
+      return res.status(400).json({
+        error: "Amount is required"
+      });
     }
 
     const options = {
@@ -70,12 +101,16 @@ exports.createRazorpayOrder = functions.https.onRequest((req, res) => {
     };
 
     razorpay.orders.create(options, function (err, order) {
+
       if (err) {
         console.error(err);
-        return res.status(500).json({ error: "Razorpay error" });
+
+        return res.status(500).json({
+          error: "Razorpay error"
+        });
       }
 
-      res.json(order);
+      return res.json(order);
     });
   });
 });
@@ -85,8 +120,11 @@ exports.createRazorpayOrder = functions.https.onRequest((req, res) => {
 // 3️⃣ VERIFY PAYMENT 🔐
 // ==========================
 exports.verifyPayment = functions.https.onRequest((req, res) => {
+
   cors(req, res, async () => {
+
     try {
+
       const {
         orderId,
         razorpay_order_id,
@@ -94,30 +132,44 @@ exports.verifyPayment = functions.https.onRequest((req, res) => {
         razorpay_signature
       } = req.body;
 
-      const body = razorpay_order_id + "|" + razorpay_payment_id;
+      const body =
+        razorpay_order_id + "|" + razorpay_payment_id;
 
       const expectedSignature = crypto
-        .createHmac("sha256", razorpay.key_secret) // ✅ FIXED
+        .createHmac("sha256", razorpay.key_secret)
         .update(body.toString())
         .digest("hex");
 
       console.log("EXPECTED:", expectedSignature);
       console.log("RECEIVED:", razorpay_signature);
 
+      // ❌ Invalid Payment
       if (expectedSignature !== razorpay_signature) {
+
         return res.status(400).json({
           success: false,
           message: "Invalid payment"
         });
       }
 
-      const qrToken = Math.random().toString(36).substring(2);
+      // ✅ Generate QR Token
+      const qrToken =
+        Math.random().toString(36).substring(2);
 
-      await db.collection("orders").doc(orderId).update({
-        paymentStatus: "success",
-        qrToken,
-        expiryTime: Date.now() + 30 * 60 * 1000
-      });
+      // ✅ Update Firestore Order
+      await db.collection("orders")
+        .doc(orderId)
+        .update({
+
+          paymentStatus: "success",
+
+          orderStatus: "pending",
+
+          qrToken,
+
+          expiryTime:
+            Date.now() + 30 * 60 * 1000
+        });
 
       return res.json({
         success: true,
@@ -125,8 +177,12 @@ exports.verifyPayment = functions.https.onRequest((req, res) => {
       });
 
     } catch (err) {
+
       console.error(err);
-      return res.status(500).json({ success: false });
+
+      return res.status(500).json({
+        success: false
+      });
     }
   });
 });
@@ -136,8 +192,11 @@ exports.verifyPayment = functions.https.onRequest((req, res) => {
 // 4️⃣ VERIFY QR (Admin Scan)
 // ==========================
 exports.verifyQR = functions.https.onRequest((req, res) => {
+
   cors(req, res, async () => {
+
     try {
+
       const { qrToken } = req.body;
 
       const snapshot = await db
@@ -145,7 +204,9 @@ exports.verifyQR = functions.https.onRequest((req, res) => {
         .where("qrToken", "==", qrToken)
         .get();
 
+      // ❌ Invalid QR
       if (snapshot.empty) {
+
         return res.status(404).json({
           success: false,
           message: "Invalid QR"
@@ -153,30 +214,49 @@ exports.verifyQR = functions.https.onRequest((req, res) => {
       }
 
       const doc = snapshot.docs[0];
+
       const order = doc.data();
 
-      // ❌ Checks
+      // ❌ Already Used
       if (order.orderStatus === "completed") {
-        return res.json({ success: false, message: "Already used" });
+
+        return res.json({
+          success: false,
+          message: "Already used"
+        });
       }
 
+      // ❌ Expired
       if (Date.now() > order.expiryTime) {
-        return res.json({ success: false, message: "QR expired" });
+
+        // Update status in Firestore
+        await doc.ref.update({
+          orderStatus: "expired"
+        });
+
+        return res.json({
+          success: false,
+          message: "QR expired"
+        });
       }
 
-      // ✅ Mark completed
+      // ✅ Mark Completed
       await doc.ref.update({
         orderStatus: "completed"
       });
 
-      res.json({
+      return res.json({
         success: true,
         message: "Order verified"
       });
 
     } catch (err) {
+
       console.error(err);
-      res.status(500).json({ success: false });
+
+      return res.status(500).json({
+        success: false
+      });
     }
   });
 });
