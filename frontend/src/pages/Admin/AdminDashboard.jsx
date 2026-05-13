@@ -32,7 +32,7 @@ function AdminDashboard() {
     const q = query(
       collection(db, "orders"),
       where("paymentStatus", "==", "success"),
-      where("orderStatus", "==", "created")
+      where("orderStatus", "==", "pending")
     );
 
     const unsubscribe = onSnapshot(

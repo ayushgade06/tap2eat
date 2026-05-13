@@ -34,9 +34,10 @@ function ScanPage() {
             });
 
             const data = await res.json();
-            setResult({ success: res.ok, data });
+            const isSuccess = res.ok && data.success !== false;
+            setResult({ success: isSuccess, data });
 
-            if (res.ok) {
+            if (isSuccess) {
               await scanner.stop();
               try {
                 if (isOfflineMode) {

@@ -96,10 +96,17 @@ export default function Student() {
   useEffect(() => {
     if (!activeOrderId || isOfflineMode) return;
     const unsubscribe = onSnapshot(doc(db, "orders", activeOrderId), (docSnap) => {
-      if (docSnap.exists() && docSnap.data().orderStatus === "completed" && qrToken) {
-        setQrToken("");
-        setActiveOrderId(null);
-        alert("Your order has been scanned and fulfilled by the admin! Enjoy your meal.");
+      if (docSnap.exists() && qrToken) {
+        const status = docSnap.data().orderStatus;
+        if (status === "completed") {
+          setQrToken("");
+          setActiveOrderId(null);
+          alert("Your order has been scanned and fulfilled by the admin! Enjoy your meal.");
+        } else if (status === "expired") {
+          setQrToken("");
+          setActiveOrderId(null);
+          alert("Your QR code has expired.");
+        }
       }
     });
     return () => unsubscribe();
