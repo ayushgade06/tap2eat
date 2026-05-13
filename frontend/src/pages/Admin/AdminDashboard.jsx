@@ -48,6 +48,7 @@ function AdminDashboard() {
       },
       (error) => {
         console.error("Error fetching orders:", error);
+        alert(`Error fetching live orders: ${error.message}. Please check Firestore Security Rules.`);
         setLoading(false);
         setRefreshing(false);
       }

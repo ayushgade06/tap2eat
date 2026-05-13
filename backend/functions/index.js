@@ -260,3 +260,63 @@ exports.verifyQR = functions.https.onRequest((req, res) => {
     }
   });
 });
+
+
+// ==========================
+// 5️⃣ ADD MENU ITEM (Admin)
+// ==========================
+exports.addMenuItem = functions.https.onRequest((req, res) => {
+  cors(req, res, async () => {
+    try {
+      const { name, price } = req.body;
+      
+      if (!name || !price) {
+        return res.status(400).json({ success: false, message: "Missing fields" });
+      }
+
+      const docRef = await db.collection("menu").add({
+        name,
+        price: Number(price),
+        available: true,
+        createdAt: new Date().toISOString()
+      });
+
+      return res.json({ success: true, id: docRef.id });
+    } catch (err) {
+      console.error(err);
+      return res.status(500).json({ success: false, message: "Failed to add item" });
+    }
+  });
+});
+
+// ==========================
+// 6️⃣ TOGGLE MENU ITEM (Admin)
+// ==========================
+exports.toggleMenuItem = functions.https.onRequest((req, res) => {
+  cors(req, res, async () => {
+    try {
+      const { id, available } = req.body;
+      await db.collection("menu").doc(id).update({ available });
+      return res.json({ success: true });
+    } catch (err) {
+      console.error(err);
+      return res.status(500).json({ success: false, message: "Failed to update item" });
+    }
+  });
+});
+
+// ==========================
+// 7️⃣ DELETE MENU ITEM (Admin)
+// ==========================
+exports.deleteMenuItem = functions.https.onRequest((req, res) => {
+  cors(req, res, async () => {
+    try {
+      const { id } = req.body;
+      await db.collection("menu").doc(id).delete();
+      return res.json({ success: true });
+    } catch (err) {
+      console.error(err);
+      return res.status(500).json({ success: false, message: "Failed to delete item" });
+    }
+  });
+});

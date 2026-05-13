@@ -42,16 +42,9 @@ function ScanPage() {
               try {
                 if (isOfflineMode) {
                   console.log("Offline bypass: Order scanned and updated");
-                  return;
                 }
-                const q = query(collection(db, "orders"), where("qrToken", "==", decodedText));
-                const snapshot = await getDocs(q);
-                const updatePromises = snapshot.docs.map((docSnap) =>
-                  updateDoc(doc(db, "orders", docSnap.id), { orderStatus: "completed" })
-                );
-                await Promise.all(updatePromises);
               } catch (delErr) {
-                console.error("Failed to update order in firestore:", delErr);
+                console.error("Failed offline mode update:", delErr);
               }
             } else {
               if (scanner.resume) scanner.resume();

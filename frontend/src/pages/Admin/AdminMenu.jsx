@@ -2,17 +2,17 @@ import { useState, useEffect } from "react";
 import { db, isOfflineMode } from "../../firebase";
 import {
   collection,
-  addDoc,
   onSnapshot,
-  updateDoc,
-  deleteDoc,
-  doc,
   query,
   orderBy
 } from "firebase/firestore";
 import { motion } from "framer-motion";
 import { Plus, Trash2, ArrowLeft } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+
+const ADD_MENU_API = import.meta.env.VITE_ADD_MENU_API;
+const TOGGLE_MENU_API = import.meta.env.VITE_TOGGLE_MENU_API;
+const DELETE_MENU_API = import.meta.env.VITE_DELETE_MENU_API;
 
 function AdminMenu() {
   const navigate = useNavigate();
@@ -40,6 +40,9 @@ function AdminMenu() {
         items.push({ id: doc.id, ...doc.data() });
       });
       setMenuItems(items);
+    }, (error) => {
+      console.error("Error fetching menu:", error);
+      alert(`Error fetching menu: ${error.message}. Check Firestore Security Rules for read permissions.`);
     });
 
     return () => unsubscribe();
@@ -69,16 +72,17 @@ function AdminMenu() {
 
     try {
       setLoading(true);
-      await addDoc(collection(db, "menu"), {
-        name: newItem.name.trim(),
-        price: Number(newItem.price),
-        available: true,
-        createdAt: new Date().toISOString()
+      const res = await fetch(ADD_MENU_API, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: newItem.name.trim(), price: newItem.price })
       });
+      const data = await res.json();
+      if (!data.success) throw new Error(data.message || "Failed to add item");
       setNewItem({ name: "", price: "" });
     } catch (err) {
       console.error("Error adding item:", err);
-      alert("Failed to add item. Check console.");
+      alert(`Failed to add item: ${err.message}`);
     } finally {
       setLoading(false);
     }
@@ -90,11 +94,16 @@ function AdminMenu() {
       return;
     }
     try {
-      const itemRef = doc(db, "menu", id);
-      await updateDoc(itemRef, { available: !currentStatus });
+      const res = await fetch(TOGGLE_MENU_API, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id, available: !currentStatus })
+      });
+      const data = await res.json();
+      if (!data.success) throw new Error(data.message || "Failed to update availability");
     } catch (err) {
       console.error("Error updating status:", err);
-      alert("Failed to update availability.");
+      alert(`Failed to update availability: ${err.message}`);
     }
   };
 
@@ -107,10 +116,16 @@ function AdminMenu() {
     }
 
     try {
-      await deleteDoc(doc(db, "menu", id));
+      const res = await fetch(DELETE_MENU_API, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id })
+      });
+      const data = await res.json();
+      if (!data.success) throw new Error(data.message || "Failed to delete item");
     } catch (err) {
       console.error("Error deleting item:", err);
-      alert("Failed to delete item.");
+      alert(`Failed to delete item: ${err.message}`);
     }
   };
 

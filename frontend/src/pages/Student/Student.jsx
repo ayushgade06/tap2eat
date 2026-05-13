@@ -53,6 +53,10 @@ export default function Student() {
       });
       setMenu(items);
       setFetchingMenu(false);
+    }, (error) => {
+      console.error("Error fetching menu:", error);
+      alert(`Error loading menu: ${error.message}. Please check Firestore Rules.`);
+      setFetchingMenu(false);
     });
     return () => unsubscribe();
   }, []);
