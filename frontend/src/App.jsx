@@ -12,7 +12,9 @@ import AppLayout from "./components/AppLayout";
 import AdminSidebar from "./components/AdminSidebar";
 
 import Student from "./pages/Student/Student";
+import MyOrders from "./pages/Student/MyOrders";
 import AdminDashboard from "./pages/Admin/AdminDashboard";
+import AdminOrders from "./pages/Admin/AdminOrders";
 import ScanPage from "./pages/Admin/ScanPage";
 import AdminMenu from "./pages/Admin/AdminMenu";
 
@@ -103,6 +105,7 @@ function App() {
       {role === "student" && (
         <Routes>
           <Route path="/" element={<Student />} />
+          <Route path="/my-orders" element={<MyOrders />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       )}
@@ -113,6 +116,7 @@ function App() {
           <div className="admin-main">
             <Routes>
               <Route path="/" element={<AdminDashboard />} />
+              <Route path="/admin/orders" element={<AdminOrders />} />
               <Route path="/admin/scan" element={<ScanPage />} />
               <Route path="/admin/menu" element={<AdminMenu />} />
               <Route path="*" element={<Navigate to="/" replace />} />
