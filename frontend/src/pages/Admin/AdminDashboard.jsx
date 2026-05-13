@@ -45,6 +45,7 @@ function isToday(timestamp) {
 
 function AdminDashboard() {
   const [allOrders, setAllOrders] = useState([]);
+  const [userEmails, setUserEmails] = useState({});
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 
@@ -127,7 +128,7 @@ function AdminDashboard() {
       orderBy("createdAt", "desc")
     );
 
-    const unsubscribe = onSnapshot(
+    const unsubscribeOrders = onSnapshot(
       q,
       (snapshot) => {
         const list = [];
@@ -144,7 +145,22 @@ function AdminDashboard() {
       }
     );
 
-    return () => unsubscribe();
+    // Listen to users for emails
+    const unsubscribeUsers = onSnapshot(
+      collection(db, "users"),
+      (snapshot) => {
+        const map = {};
+        snapshot.forEach((doc) => {
+          map[doc.id] = doc.data().email;
+        });
+        setUserEmails(map);
+      }
+    );
+
+    return () => {
+      unsubscribeOrders();
+      unsubscribeUsers();
+    };
   }, []);
 
   const pendingOrders = allOrders.filter((o) => o.orderStatus === "pending");
@@ -386,7 +402,7 @@ function AdminDashboard() {
                       {(order.items || []).map((i) => i.name).join(", ")}
                     </div>
                     <div className="dashboard-recent-meta">
-                      {formatOrderDate(order.createdAt)}
+                      {formatOrderDate(order.createdAt)} • {userEmails[order.userId] || order.userId?.substring(0, 8) || "Guest"}
                     </div>
                   </div>
                   <div className="dashboard-recent-right">

@@ -7,29 +7,21 @@ const cors = require("cors")({ origin: true });
 admin.initializeApp();
 const db = admin.firestore();
 
-// Razorpay configuration
 let razorpay;
 
 if (
   process.env.RAZORPAY_KEY_ID &&
   process.env.RAZORPAY_KEY_SECRET
 ) {
-
   razorpay = new Razorpay({
     key_id: process.env.RAZORPAY_KEY_ID,
     key_secret: process.env.RAZORPAY_KEY_SECRET
   });
-
 }
 
-
-// ==========================
-// 1️⃣ CREATE ORDER (Firestore)
-// ==========================
 exports.createOrder = functions.https.onRequest((req, res) => {
   cors(req, res, async () => {
     try {
-
       const { userId, items, totalAmount } = req.body;
 
       if (!userId || !items || !totalAmount) {
@@ -39,23 +31,14 @@ exports.createOrder = functions.https.onRequest((req, res) => {
       }
 
       const orderRef = await db.collection("orders").add({
-
         userId,
-
         items,
-
         totalAmount,
-
         paymentStatus: "pending",
-
         orderStatus: "pending",
-
         createdAt: Date.now(),
-
         expiryTime: null,
-
         qrToken: null
-
       });
 
       return res.json({
@@ -64,9 +47,7 @@ exports.createOrder = functions.https.onRequest((req, res) => {
       });
 
     } catch (err) {
-
       console.error(err);
-
       return res.status(500).json({
         error: "Failed to create order"
       });
@@ -74,14 +55,8 @@ exports.createOrder = functions.https.onRequest((req, res) => {
   });
 });
 
-
-// ==========================
-// 2️⃣ CREATE RAZORPAY ORDER
-// ==========================
 exports.createRazorpayOrder = functions.https.onRequest((req, res) => {
-
   cors(req, res, () => {
-
     if (req.method !== "POST") {
       return res.status(405).send("Method Not Allowed");
     }
@@ -101,30 +76,20 @@ exports.createRazorpayOrder = functions.https.onRequest((req, res) => {
     };
 
     razorpay.orders.create(options, function (err, order) {
-
       if (err) {
         console.error(err);
-
         return res.status(500).json({
           error: "Razorpay error"
         });
       }
-
       return res.json(order);
     });
   });
 });
 
-
-// ==========================
-// 3️⃣ VERIFY PAYMENT 🔐
-// ==========================
 exports.verifyPayment = functions.https.onRequest((req, res) => {
-
   cors(req, res, async () => {
-
     try {
-
       const {
         orderId,
         razorpay_order_id,
@@ -132,43 +97,29 @@ exports.verifyPayment = functions.https.onRequest((req, res) => {
         razorpay_signature
       } = req.body;
 
-      const body =
-        razorpay_order_id + "|" + razorpay_payment_id;
+      const body = razorpay_order_id + "|" + razorpay_payment_id;
 
       const expectedSignature = crypto
         .createHmac("sha256", razorpay.key_secret)
         .update(body.toString())
         .digest("hex");
 
-      console.log("EXPECTED:", expectedSignature);
-      console.log("RECEIVED:", razorpay_signature);
-
-      // ❌ Invalid Payment
       if (expectedSignature !== razorpay_signature) {
-
         return res.status(400).json({
           success: false,
           message: "Invalid payment"
         });
       }
 
-      // ✅ Generate QR Token
-      const qrToken =
-        Math.random().toString(36).substring(2);
+      const qrToken = Math.random().toString(36).substring(2);
 
-      // ✅ Update Firestore Order
       await db.collection("orders")
         .doc(orderId)
         .update({
-
           paymentStatus: "success",
-
           orderStatus: "pending",
-
           qrToken,
-
-          expiryTime:
-            Date.now() + 30 * 60 * 1000
+          expiryTime: Date.now() + 30 * 60 * 1000
         });
 
       return res.json({
@@ -177,9 +128,7 @@ exports.verifyPayment = functions.https.onRequest((req, res) => {
       });
 
     } catch (err) {
-
       console.error(err);
-
       return res.status(500).json({
         success: false
       });
@@ -187,16 +136,9 @@ exports.verifyPayment = functions.https.onRequest((req, res) => {
   });
 });
 
-
-// ==========================
-// 4️⃣ VERIFY QR (Admin Scan)
-// ==========================
 exports.verifyQR = functions.https.onRequest((req, res) => {
-
   cors(req, res, async () => {
-
     try {
-
       const { qrToken } = req.body;
 
       const snapshot = await db
@@ -204,9 +146,7 @@ exports.verifyQR = functions.https.onRequest((req, res) => {
         .where("qrToken", "==", qrToken)
         .get();
 
-      // ❌ Invalid QR
       if (snapshot.empty) {
-
         return res.status(404).json({
           success: false,
           message: "Invalid QR"
@@ -214,22 +154,16 @@ exports.verifyQR = functions.https.onRequest((req, res) => {
       }
 
       const doc = snapshot.docs[0];
-
       const order = doc.data();
 
-      // ❌ Already Used
       if (order.orderStatus === "completed") {
-
         return res.json({
           success: false,
           message: "Already used"
         });
       }
 
-      // ❌ Expired
       if (Date.now() > order.expiryTime) {
-
-        // Update status in Firestore
         await doc.ref.update({
           orderStatus: "expired"
         });
@@ -240,7 +174,6 @@ exports.verifyQR = functions.https.onRequest((req, res) => {
         });
       }
 
-      // ✅ Mark Completed
       await doc.ref.update({
         orderStatus: "completed"
       });
@@ -251,9 +184,7 @@ exports.verifyQR = functions.https.onRequest((req, res) => {
       });
 
     } catch (err) {
-
       console.error(err);
-
       return res.status(500).json({
         success: false
       });
@@ -261,10 +192,6 @@ exports.verifyQR = functions.https.onRequest((req, res) => {
   });
 });
 
-
-// ==========================
-// 5️⃣ ADD MENU ITEM (Admin)
-// ==========================
 exports.addMenuItem = functions.https.onRequest((req, res) => {
   cors(req, res, async () => {
     try {
@@ -289,9 +216,6 @@ exports.addMenuItem = functions.https.onRequest((req, res) => {
   });
 });
 
-// ==========================
-// 6️⃣ TOGGLE MENU ITEM (Admin)
-// ==========================
 exports.toggleMenuItem = functions.https.onRequest((req, res) => {
   cors(req, res, async () => {
     try {
@@ -305,9 +229,6 @@ exports.toggleMenuItem = functions.https.onRequest((req, res) => {
   });
 });
 
-// ==========================
-// 7️⃣ DELETE MENU ITEM (Admin)
-// ==========================
 exports.deleteMenuItem = functions.https.onRequest((req, res) => {
   cors(req, res, async () => {
     try {

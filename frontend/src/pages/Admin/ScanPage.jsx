@@ -124,7 +124,13 @@ function ScanPage() {
           </p>
 
           {result.success && (
-            <button className="btn btn-primary" onClick={() => navigate("/")}>
+            <button 
+              className="btn btn-primary" 
+              onClick={() => {
+                setResult(null);
+                navigate("/", { replace: true });
+              }}
+            >
               Back to Dashboard
             </button>
           )}

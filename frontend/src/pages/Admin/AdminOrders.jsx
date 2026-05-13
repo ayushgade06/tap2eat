@@ -82,8 +82,9 @@ function AdminOrderCard({ order, index }) {
     >
       <div className="admin-order-header">
         <div className="admin-order-header-left">
+          <span className="admin-order-id-label">ID:</span>
           <span className="font-mono admin-order-id">
-            #{(order.id || "").substring(0, 8).toUpperCase()}
+            {(order.id || "").substring(0, 8).toUpperCase()}
           </span>
           <span className="admin-order-date">
             {formatOrderDate(order.createdAt)}
@@ -103,9 +104,9 @@ function AdminOrderCard({ order, index }) {
       </div>
 
       <div className="admin-order-user">
-        <span className="admin-order-user-label">User:</span>
-        <span className="font-mono admin-order-user-id">
-          {(order.userId || "N/A").substring(0, 12)}…
+        <span className="admin-order-user-label">Student:</span>
+        <span className="admin-order-user-id">
+          {order.userEmail || (order.userId ? `ID: ${order.userId.substring(0, 8)}...` : "Guest")}
         </span>
       </div>
 
@@ -123,6 +124,7 @@ function AdminOrderCard({ order, index }) {
 
 function AdminOrders() {
   const [allOrders, setAllOrders] = useState([]);
+  const [userEmails, setUserEmails] = useState({});
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [activeTab, setActiveTab] = useState("pending");
@@ -190,12 +192,13 @@ function AdminOrders() {
       return;
     }
 
+    // Listen to orders
     const q = query(
       collection(db, "orders"),
       orderBy("createdAt", "desc")
     );
 
-    const unsubscribe = onSnapshot(
+    const unsubscribeOrders = onSnapshot(
       q,
       (snapshot) => {
         const list = [];
@@ -213,17 +216,43 @@ function AdminOrders() {
       }
     );
 
-    return () => unsubscribe();
+    // Listen to users for emails
+    const unsubscribeUsers = onSnapshot(
+      collection(db, "users"),
+      (snapshot) => {
+        const map = {};
+        snapshot.forEach((doc) => {
+          map[doc.id] = doc.data().email;
+        });
+        setUserEmails(map);
+      },
+      (error) => {
+        console.error("Error fetching users for emails:", error);
+        if (error.code === 'permission-denied') {
+          console.warn("Permission denied for 'users' collection. Admin cannot see student emails until Rules are updated.");
+        }
+      }
+    );
+
+    return () => {
+      unsubscribeOrders();
+      unsubscribeUsers();
+    };
   }, []);
+
+  const ordersWithEmails = allOrders.map(order => ({
+    ...order,
+    userEmail: userEmails[order.userId] || null
+  }));
 
   const handleRefresh = () => {
     setRefreshing(true);
     setTimeout(() => setRefreshing(false), 500);
   };
 
-  const pendingOrders = allOrders.filter((o) => o.orderStatus === "pending");
-  const completedOrders = allOrders.filter((o) => o.orderStatus === "completed");
-  const expiredOrders = allOrders.filter((o) => o.orderStatus === "expired");
+  const pendingOrders = ordersWithEmails.filter((o) => o.orderStatus === "pending");
+  const completedOrders = ordersWithEmails.filter((o) => o.orderStatus === "completed");
+  const expiredOrders = ordersWithEmails.filter((o) => o.orderStatus === "expired");
 
   const completedToday = completedOrders.filter((o) => isToday(o.createdAt));
   const expiredToday = expiredOrders.filter((o) => isToday(o.createdAt));
