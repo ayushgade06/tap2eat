@@ -19,15 +19,6 @@ function Login({ setUser, setRole, onClose }) {
     }
   };
 
-  const handleBypass = (role) => {
-    setUser({
-      uid: `demo-${role}-123`,
-      email: `${role}@demo.com`,
-      displayName: `Demo ${role === "admin" ? "Admin" : "Student"}`
-    });
-    setRole(role);
-    if (onClose) onClose();
-  };
 
   return (
     <>
@@ -62,38 +53,6 @@ function Login({ setUser, setRole, onClose }) {
       >
         {loading ? <span className="loader" style={{ width: 20, height: 20, borderWidth: 2 }} /> : "Sign In"}
       </button>
-
-      <div style={{
-        marginTop: "var(--space-6)",
-        borderTop: "1px solid var(--border)",
-        paddingTop: "var(--space-5)",
-        textAlign: "center"
-      }}>
-        <p style={{ color: "var(--text-muted)", fontSize: "0.85rem", marginBottom: "var(--space-4)" }}>
-          Testing without Firebase?
-        </p>
-        <div className="flex gap-3" style={{ justifyContent: "center" }}>
-          <button className="btn btn-secondary btn-sm" onClick={() => handleBypass("student")}>
-            Demo Student
-          </button>
-          <button
-            className="btn btn-sm"
-            style={{
-              background: "var(--accent-soft)",
-              color: "var(--accent)",
-              border: "1px solid var(--border-accent)",
-              padding: "10px 20px",
-              borderRadius: "var(--radius-full)",
-              fontWeight: 600,
-              cursor: "pointer",
-              fontFamily: "var(--font-body)"
-            }}
-            onClick={() => handleBypass("admin")}
-          >
-            Demo Admin
-          </button>
-        </div>
-      </div>
     </>
   );
 }
