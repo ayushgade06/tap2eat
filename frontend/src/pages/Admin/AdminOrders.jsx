@@ -256,7 +256,7 @@ function AdminOrders() {
 
   const completedToday = completedOrders.filter((o) => isToday(o.createdAt));
   const expiredToday = expiredOrders.filter((o) => isToday(o.createdAt));
-  const revenueToday = completedToday.reduce((sum, o) => sum + (o.totalAmount || 0), 0);
+  const revenueToday = completedToday.reduce((sum, o) => sum + Number(o.totalAmount || 0), 0);
 
   const tabs = [
     { key: "pending", label: "Pending", count: pendingOrders.length },

@@ -235,7 +235,7 @@ exports.deleteMenuItem = functions.https.onRequest((req, res) => {
     try {
       const { id } = req.body || {};
       if (!id) return res.status(400).json({ success: false, message: "Missing item ID" });
-x      await db.collection("menu").doc(id).delete();
+      await db.collection("menu").doc(id).delete();
       return res.json({ success: true });
     } catch (err) {
       console.error(err);

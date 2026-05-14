@@ -170,8 +170,8 @@ function AdminDashboard() {
   const todayOrders = allOrders.filter((o) => isToday(o.createdAt));
   const completedToday = completedOrders.filter((o) => isToday(o.createdAt));
   const expiredToday = expiredOrders.filter((o) => isToday(o.createdAt));
-  const revenueToday = completedToday.reduce((sum, o) => sum + (o.totalAmount || 0), 0);
-  const totalRevenue = completedOrders.reduce((sum, o) => sum + (o.totalAmount || 0), 0);
+  const revenueToday = completedToday.reduce((sum, o) => sum + Number(o.totalAmount || 0), 0);
+  const totalRevenue = completedOrders.reduce((sum, o) => sum + Number(o.totalAmount || 0), 0);
 
   const recentOrders = allOrders.slice(0, 5);
 

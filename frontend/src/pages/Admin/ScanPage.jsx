@@ -1,10 +1,9 @@
 import { useEffect, useState, useRef } from "react";
 import { Html5Qrcode } from "html5-qrcode";
 import { useNavigate } from "react-router-dom";
-import { db, isOfflineMode } from "../../firebase";
-import { collection, query, where, getDocs, updateDoc, doc } from "firebase/firestore";
+import { isOfflineMode } from "../../firebase";
 import { motion } from "framer-motion";
-import { ScanLine, CheckCircle2, XCircle, ArrowLeft } from "lucide-react";
+import { ScanLine, CheckCircle2, XCircle } from "lucide-react";
 
 const VERIFY_API = import.meta.env.VITE_VERIFY_QR_API;
 
@@ -12,6 +11,7 @@ function ScanPage() {
   const [result, setResult] = useState(null);
   const [loading, setLoading] = useState(false);
   const scannerRef = useRef(null);
+  const isScannerRunning = useRef(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -38,13 +38,10 @@ function ScanPage() {
             setResult({ success: isSuccess, data });
 
             if (isSuccess) {
-              await scanner.stop();
-              try {
-                if (isOfflineMode) {
-                  console.log("Offline bypass: Order scanned and updated");
-                }
-              } catch (delErr) {
-                console.error("Failed offline mode update:", delErr);
+              // Stop scanner only if it's currently running
+              if (isScannerRunning.current) {
+                isScannerRunning.current = false;
+                await scanner.stop().catch(() => {});
               }
             } else {
               if (scanner.resume) scanner.resume();
@@ -58,12 +55,19 @@ function ScanPage() {
           }
         }
       )
+      .then(() => {
+        // Mark scanner as running only after it successfully starts
+        isScannerRunning.current = true;
+      })
       .catch((err) => console.error("Camera error:", err));
 
     return () => {
-      if (scannerRef.current) {
+      // Cleanup: only stop if still running to prevent double-stop crash
+      if (scannerRef.current && isScannerRunning.current) {
+        isScannerRunning.current = false;
         scannerRef.current.stop().catch(() => {});
       }
+      scannerRef.current = null;
     };
   }, []);
 
@@ -90,7 +94,7 @@ function ScanPage() {
           </div>
 
           {loading && (
-            <div className="flex items-center gap-3" style={{ justifyContent: "center", color: "var(--accent)" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", justifyContent: "center", color: "var(--accent)" }}>
               <span className="loader" style={{ width: 20, height: 20, borderWidth: 2 }} />
               <span style={{ fontWeight: 600 }}>Processing scan...</span>
             </div>
@@ -124,12 +128,9 @@ function ScanPage() {
           </p>
 
           {result.success && (
-            <button 
-              className="btn btn-primary" 
-              onClick={() => {
-                setResult(null);
-                navigate("/", { replace: true });
-              }}
+            <button
+              className="btn btn-primary"
+              onClick={() => navigate("/", { replace: true })}
             >
               Back to Dashboard
             </button>
