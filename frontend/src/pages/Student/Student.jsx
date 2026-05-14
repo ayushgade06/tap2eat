@@ -9,7 +9,8 @@ import {
   where
 } from "firebase/firestore";
 import { motion, AnimatePresence } from "framer-motion";
-import { ShoppingBag, ArrowRight, ArrowLeft, Sparkles, CheckCircle2, Plus, Minus, ReceiptText } from "lucide-react";
+import { ShoppingBag, ArrowRight, ArrowLeft, Sparkles, CheckCircle2, Plus, Minus, ReceiptText, Home } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 const CREATE_API = import.meta.env.VITE_CREATE_API;
 const VERIFY_API = import.meta.env.VITE_VERIFY_API;
@@ -21,6 +22,7 @@ export default function Student() {
   const CGST_RATE = 0.025;
   const PLATFORM_FEE_RATE = 0.01;
 
+  const navigate = useNavigate();
   const [cart, setCart] = useState([]);
   const [menu, setMenu] = useState([]);
   const [qrToken, setQrToken] = useState("");
@@ -28,6 +30,7 @@ export default function Student() {
   const [loading, setLoading] = useState(false);
   const [fetchingMenu, setFetchingMenu] = useState(true);
   const [currentView, setCurrentView] = useState("menu");
+  const [orderMessage, setOrderMessage] = useState("");
 
   useEffect(() => {
     if (isOfflineMode) {
@@ -105,11 +108,13 @@ export default function Student() {
         if (status === "completed") {
           setQrToken("");
           setActiveOrderId(null);
-          alert("Your order has been scanned and fulfilled by the admin! Enjoy your meal.");
+          setOrderMessage("Your order has been scanned and fulfilled! Enjoy your meal. 🎉");
+          setCurrentView("menu");
         } else if (status === "expired") {
           setQrToken("");
           setActiveOrderId(null);
-          alert("Your QR code has expired.");
+          setOrderMessage("Your QR code has expired.");
+          setCurrentView("menu");
         }
       }
     });
@@ -199,98 +204,13 @@ export default function Student() {
     }
   };
 
-  if (qrToken) {
-    return (
-      <div className="app-content">
-        <div className="qr-view">
-          <motion.div
-            initial={{ scale: 0.85, opacity: 0, y: 20 }}
-            animate={{ scale: 1, opacity: 1, y: 0 }}
-            transition={{ type: "spring", bounce: 0.35, duration: 0.6 }}
-            className="card qr-card qr-card-premium"
-          >
-            {/* Success Icon */}
-            <motion.div
-              initial={{ scale: 0, rotate: -180 }}
-              animate={{ scale: 1, rotate: 0 }}
-              transition={{ delay: 0.15, type: "spring", bounce: 0.6 }}
-              className="qr-success-icon"
-            >
-              <CheckCircle2 size={64} color="var(--accent-secondary)" />
-            </motion.div>
-
-            {/* Main Content */}
-            <div className="qr-content">
-              <motion.h1 
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.3 }}
-                className="qr-title"
-              >
-                Order Confirmed!
-              </motion.h1>
-              
-              <motion.p 
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.4 }}
-                className="qr-subtitle"
-              >
-                Your meal is being prepared
-              </motion.p>
-
-              {/* QR Code with enhanced styling */}
-              <motion.div
-                initial={{ opacity: 0, scale: 0.9 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ delay: 0.5 }}
-                className="qr-code-wrapper"
-              >
-                <div className="qr-code-container">
-                  <QRCodeCanvas 
-                    value={qrToken} 
-                    size={200}
-                    level="H"
-                    includeMargin={true}
-                  />
-                </div>
-              </motion.div>
-
-              <motion.div
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.6 }}
-                className="qr-instructions"
-              >
-                <p className="qr-instruction-title">What's next?</p>
-                <ul className="qr-instruction-list">
-                  <li><span className="qr-step">1</span> Save or screenshot this code</li>
-                  <li><span className="qr-step">2</span> Head to the pickup counter</li>
-                  <li><span className="qr-step">3</span> Admin will scan your code</li>
-                </ul>
-              </motion.div>
-
-              {/* Action Buttons */}
-              <div className="qr-actions">
-                <motion.button 
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.7 }}
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                  className="btn btn-secondary btn-block"
-                  onClick={() => setQrToken("")}
-                >
-                  <ArrowRight size={18} />
-                  Place Another Order
-                </motion.button>
-              </div>
-            </div>
-          </motion.div>
-        </div>
-      </div>
-    );
-  }
+  // Clear order message when user starts interacting
+  useEffect(() => {
+    if (orderMessage && currentView === "menu") {
+      const timer = setTimeout(() => setOrderMessage(""), 8000);
+      return () => clearTimeout(timer);
+    }
+  }, [orderMessage, currentView]);
 
   const CartContent = () => (
     <>
@@ -396,7 +316,136 @@ export default function Student() {
 
   return (
     <div className={`app-content ${currentView === "menu" && cart.length > 0 ? "has-cart-bottom-bar" : ""}`}>
-      {currentView === "menu" && (
+      {/* Order Message Banner */}
+      <AnimatePresence>
+        {orderMessage && currentView === "menu" && (
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            className="order-message-banner"
+          >
+            <CheckCircle2 size={18} />
+            <span>{orderMessage}</span>
+            <button className="btn-icon" style={{ marginLeft: "auto", width: 28, height: 28 }} onClick={() => setOrderMessage("")}>
+              ×
+            </button>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* QR Confirmation View */}
+      {qrToken && currentView !== "cart" && (
+        <div className="qr-view">
+          <motion.div
+            initial={{ scale: 0.85, opacity: 0, y: 20 }}
+            animate={{ scale: 1, opacity: 1, y: 0 }}
+            transition={{ type: "spring", bounce: 0.35, duration: 0.6 }}
+            className="card qr-card qr-card-premium"
+          >
+            {/* Success Icon */}
+            <motion.div
+              initial={{ scale: 0, rotate: -180 }}
+              animate={{ scale: 1, rotate: 0 }}
+              transition={{ delay: 0.15, type: "spring", bounce: 0.6 }}
+              className="qr-success-icon"
+            >
+              <CheckCircle2 size={64} color="var(--accent-secondary)" />
+            </motion.div>
+
+            {/* Main Content */}
+            <div className="qr-content">
+              <motion.h1 
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.3 }}
+                className="qr-title"
+              >
+                Order Confirmed!
+              </motion.h1>
+              
+              <motion.p 
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.4 }}
+                className="qr-subtitle"
+              >
+                Your meal is being prepared
+              </motion.p>
+
+              {/* QR Code with enhanced styling */}
+              <motion.div
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ delay: 0.5 }}
+                className="qr-code-wrapper"
+              >
+                <div className="qr-code-container">
+                  <QRCodeCanvas 
+                    value={qrToken} 
+                    size={200}
+                    level="H"
+                    includeMargin={true}
+                  />
+                </div>
+              </motion.div>
+
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.6 }}
+                className="qr-instructions"
+              >
+                <p className="qr-instruction-title">What's next?</p>
+                <ul className="qr-instruction-list">
+                  <li><span className="qr-step">1</span> Save or screenshot this code</li>
+                  <li><span className="qr-step">2</span> Head to the pickup counter</li>
+                  <li><span className="qr-step">3</span> Admin will scan your code</li>
+                </ul>
+              </motion.div>
+
+              {/* Action Buttons */}
+              <div className="qr-actions">
+                <motion.button 
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.7 }}
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  className="btn btn-primary btn-block"
+                  onClick={() => {
+                    setQrToken("");
+                    setCurrentView("menu");
+                  }}
+                >
+                  <ArrowRight size={18} />
+                  Place Another Order
+                </motion.button>
+                <motion.button 
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.8 }}
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  className="btn btn-ghost btn-block"
+                  style={{ marginTop: "var(--space-3)" }}
+                  onClick={() => {
+                    setQrToken("");
+                    setCurrentView("menu");
+                    navigate("/my-orders");
+                  }}
+                >
+                  <ReceiptText size={18} />
+                  View My Orders
+                </motion.button>
+              </div>
+            </div>
+          </motion.div>
+        </div>
+      )}
+
+      {/* Menu View */}
+      {!qrToken && currentView === "menu" && (
         <div className="student-menu-area">
           <div className="student-header-row">
             <div>
@@ -459,7 +508,7 @@ export default function Student() {
         </div>
       )}
 
-      {currentView === "menu" && cart.length > 0 && (
+      {!qrToken && currentView === "menu" && cart.length > 0 && (
         <button className="cart-bottom-bar" onClick={() => setCurrentView("cart")}> 
           <div className="cart-bottom-bar-meta">
             <span className="cart-bottom-bar-count"><ShoppingBag size={16} /> {cart.length} item{cart.length > 1 ? "s" : ""}</span>
