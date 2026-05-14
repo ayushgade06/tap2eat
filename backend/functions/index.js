@@ -195,10 +195,10 @@ exports.verifyQR = functions.https.onRequest((req, res) => {
 exports.addMenuItem = functions.https.onRequest((req, res) => {
   cors(req, res, async () => {
     try {
-      const { name, price } = req.body;
+      const { name, price } = req.body || {};
       
-      if (!name || !price) {
-        return res.status(400).json({ success: false, message: "Missing fields" });
+      if (!name || price === undefined || price === null) {
+        return res.status(400).json({ success: false, message: "Missing name or price in request body" });
       }
 
       const docRef = await db.collection("menu").add({
@@ -219,7 +219,8 @@ exports.addMenuItem = functions.https.onRequest((req, res) => {
 exports.toggleMenuItem = functions.https.onRequest((req, res) => {
   cors(req, res, async () => {
     try {
-      const { id, available } = req.body;
+      const { id, available } = req.body || {};
+      if (!id) return res.status(400).json({ success: false, message: "Missing item ID" });
       await db.collection("menu").doc(id).update({ available });
       return res.json({ success: true });
     } catch (err) {
@@ -232,7 +233,8 @@ exports.toggleMenuItem = functions.https.onRequest((req, res) => {
 exports.deleteMenuItem = functions.https.onRequest((req, res) => {
   cors(req, res, async () => {
     try {
-      const { id } = req.body;
+      const { id } = req.body || {};
+      if (!id) return res.status(400).json({ success: false, message: "Missing item ID" });
       await db.collection("menu").doc(id).delete();
       return res.json({ success: true });
     } catch (err) {

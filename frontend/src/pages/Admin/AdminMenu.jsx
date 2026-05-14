@@ -14,6 +14,28 @@ const ADD_MENU_API = import.meta.env.VITE_ADD_MENU_API;
 const TOGGLE_MENU_API = import.meta.env.VITE_TOGGLE_MENU_API;
 const DELETE_MENU_API = import.meta.env.VITE_DELETE_MENU_API;
 
+// Helper to handle fetch responses and provide better error messages
+async function handleFetchResponse(res, actionName) {
+  if (!res.ok) {
+    let errorDetail = "";
+    try {
+      const text = await res.text();
+      errorDetail = text.substring(0, 100); // Get first 100 chars of error page
+    } catch (e) {
+      errorDetail = res.statusText;
+    }
+    throw new Error(`${actionName} failed (Status ${res.status}): ${errorDetail}`);
+  }
+  
+  try {
+    return await res.json();
+  } catch (err) {
+    const text = await res.text();
+    console.error(`JSON parse error for ${actionName}:`, text);
+    throw new Error(`Invalid response format from server for ${actionName}. Expected JSON but received: ${text.substring(0, 50)}...`);
+  }
+}
+
 function AdminMenu() {
   const navigate = useNavigate();
   const [menuItems, setMenuItems] = useState([]);
@@ -72,12 +94,17 @@ function AdminMenu() {
 
     try {
       setLoading(true);
+      if (!ADD_MENU_API) {
+        throw new Error("Add Menu API URL is not configured in .env file. Please add VITE_ADD_MENU_API and restart the dev server.");
+      }
+
       const res = await fetch(ADD_MENU_API, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ name: newItem.name.trim(), price: newItem.price })
       });
-      const data = await res.json();
+      
+      const data = await handleFetchResponse(res, "Add Item");
       if (!data.success) throw new Error(data.message || "Failed to add item");
       setNewItem({ name: "", price: "" });
     } catch (err) {
@@ -94,12 +121,17 @@ function AdminMenu() {
       return;
     }
     try {
+      if (!TOGGLE_MENU_API) {
+        throw new Error("Toggle Menu API URL is not configured in .env file.");
+      }
+
       const res = await fetch(TOGGLE_MENU_API, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ id, available: !currentStatus })
       });
-      const data = await res.json();
+      
+      const data = await handleFetchResponse(res, "Update Availability");
       if (!data.success) throw new Error(data.message || "Failed to update availability");
     } catch (err) {
       console.error("Error updating status:", err);
@@ -116,12 +148,17 @@ function AdminMenu() {
     }
 
     try {
+      if (!DELETE_MENU_API) {
+        throw new Error("Delete Menu API URL is not configured in .env file.");
+      }
+
       const res = await fetch(DELETE_MENU_API, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ id })
       });
-      const data = await res.json();
+      
+      const data = await handleFetchResponse(res, "Delete Item");
       if (!data.success) throw new Error(data.message || "Failed to delete item");
     } catch (err) {
       console.error("Error deleting item:", err);
