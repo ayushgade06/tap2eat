@@ -91,7 +91,7 @@ function AdminOrderCard({ order, index }) {
           </span>
         </div>
         <div className="admin-order-header-right">
-          <span className="admin-order-amount">₹{order.totalAmount}</span>
+          <span className="admin-order-amount">₹{Number(order.totalAmount || 0).toFixed(2)}</span>
           <span className={`badge ${
             isCompleted ? "badge-success" : isExpired ? "badge-danger" : "badge-warning"
           }`}>
@@ -340,7 +340,7 @@ function AdminOrders() {
             <IndianRupee size={28} color="var(--accent-secondary)" />
           </div>
           <div>
-            <div className="admin-stat-value">₹{revenueToday}</div>
+            <div className="admin-stat-value">₹{revenueToday.toFixed(2)}</div>
             <div className="admin-stat-label">Revenue Today</div>
           </div>
         </div>

@@ -272,7 +272,7 @@ function AdminDashboard() {
             </div>
             <span className="dashboard-stat-badge">Today</span>
           </div>
-          <div className="dashboard-stat-number">₹{revenueToday}</div>
+          <div className="dashboard-stat-number">₹{revenueToday.toFixed(2)}</div>
           <div className="dashboard-stat-label">Revenue</div>
         </motion.div>
 
@@ -288,7 +288,7 @@ function AdminDashboard() {
             </div>
             <span className="dashboard-stat-badge">All Time</span>
           </div>
-          <div className="dashboard-stat-number">₹{totalRevenue}</div>
+          <div className="dashboard-stat-number">₹{totalRevenue.toFixed(2)}</div>
           <div className="dashboard-stat-label">Total Revenue</div>
         </motion.div>
       </div>
@@ -406,7 +406,7 @@ function AdminDashboard() {
                     </div>
                   </div>
                   <div className="dashboard-recent-right">
-                    <span className="dashboard-recent-amount">₹{order.totalAmount}</span>
+                    <span className="dashboard-recent-amount">₹{Number(order.totalAmount || 0).toFixed(2)}</span>
                     <span className={`badge ${
                       order.orderStatus === "completed" ? "badge-success" :
                       order.orderStatus === "expired" ? "badge-danger" : "badge-warning"
